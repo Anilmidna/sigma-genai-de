@@ -17,25 +17,29 @@ else:
     print("FAIL — need 3.10+")
 
 # Check 2: boto3
+boto3 = None
 try:
     import boto3
     print(f"[2/5] boto3: {boto3.__version__} OK")
 except ImportError:
-    print("[2/5] boto3: MISSING — run: pip install boto3")
+    print("[2/5] boto3: MISSING — install the setup requirements in a virtual environment")
 
 # Check 3: Bedrock access
-try:
-    client = boto3.client("bedrock-runtime", region_name="us-east-1")
-    response = client.converse(
-        modelId="amazon.nova-lite-v1:0",
-        messages=[{"role": "user", "content": [{"text": "Reply: OK"}]}],
-        inferenceConfig={"maxTokens": 10},
-    )
-    text = response["output"]["message"]["content"][0]["text"]
-    print(f"[3/5] Bedrock Nova Lite: OK (response: '{text}')")
-except Exception as e:
-    print(f"[3/5] Bedrock Nova Lite: FAIL — {e}")
-    print("      Fallback: use Ollama (ollama serve + qwen2.5:7b)")
+if boto3 is None:
+    print("[3/5] Bedrock Nova Lite: SKIPPED — boto3 is not installed yet")
+else:
+    try:
+        client = boto3.client("bedrock-runtime", region_name="us-east-1")
+        response = client.converse(
+            modelId="amazon.nova-lite-v1:0",
+            messages=[{"role": "user", "content": [{"text": "Reply: OK"}]}],
+            inferenceConfig={"maxTokens": 10},
+        )
+        text = response["output"]["message"]["content"][0]["text"]
+        print(f"[3/5] Bedrock Nova Lite: OK (response: '{text}')")
+    except Exception as e:
+        print(f"[3/5] Bedrock Nova Lite: FAIL — {e}")
+        print("      Fallback: use Ollama (ollama serve + qwen2.5:7b)")
 
 # Check 4: Ollama
 try:
@@ -54,7 +58,7 @@ try:
     import snowflake.connector
     print(f"[5/5] snowflake-connector: OK")
 except ImportError:
-    print("[5/5] snowflake-connector: MISSING — run: pip install snowflake-connector-python")
+    print("[5/5] snowflake-connector: MISSING — install the setup requirements in a virtual environment")
 
 print("\n" + "=" * 50)
 print("If checks 1-3 pass, you're ready for Day 6.")

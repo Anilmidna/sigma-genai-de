@@ -35,10 +35,13 @@ ollama pull qwen2.5:7b   # Download the model (4.4 GB)
 ollama run qwen2.5:7b "Reply with: Ollama is working"
 ```
 
-## 4. Install Python Packages
+## 4. Create a Virtual Environment and Install Python Packages
 
 ```bash
-pip install -r setup/requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r setup/requirements.txt
 ```
 
 ## 5. VS Code Extensions (Recommended)
