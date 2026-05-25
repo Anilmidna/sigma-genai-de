@@ -1,48 +1,58 @@
 """
-NL2SQL Pipeline — Day 6, Module 2
+NL2SQL Pipeline — Day 6, Module 2 (Ollama Edition)
 Sigma Intelligence Platform | GenAI for Data Engineering
 
 ═══════════════════════════════════════════════════════════════
-MISSION:
-  Product and marketing raise 30-40 data requests per week.
-  Average turnaround: 3 days. Sigma DataTech wants them to type
-  English, get SQL, see results — in under 30 seconds.
-  A basic LLM approach worked 60% of the time. Push it above 90%.
-
-WHY THIS MATTERS (vs just asking ChatGPT "write me SQL"):
-  - Schema-grounded → knows YOUR tables, columns, business rules
-  - Safety validated → blocks DROP/DELETE before execution
-  - Audited → every question/SQL/result logged for compliance
-  - Executable → actually runs on Snowflake, returns real data
-  - Explainable → translates results into friendly English
-
-WHERE THIS FITS IN THE PLATFORM:
-  Today: standalone NL2SQL pipeline
-  Day 6 Bonus: compare against Snowflake Cortex Analyst (same queries)
-  Day 12: becomes the NL analytics interface with multi-turn memory
-
-  IMPORTANT: SPEND 5 MINS TO REVIEW THE CODE. YOU HAVE A QUIZ ON THIS LATER. 
-═══════════════════════════════════════════════════════════════
-
 HOW TO RUN:
-  python 2_nl2sql_pipeline.py
+  python 2_nl_sql_ollama.py
+═══════════════════════════════════════════════════════════════
 """
 
-import boto3
 import json
 import os
 import re
+import urllib.request
 from datetime import datetime
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from sample_data import SCHEMA_RICH, NL2SQL_QUESTIONS, SNOWFLAKE_CONFIG_TEMPLATE
 
 # ── CONFIGURATION ──────────────────────────────────────────
-bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
-MODEL_ID = 'amazon.nova-lite-v1:0'  # Pro for better SQL reasoning
+MODEL_ID = 'qwen2.5:7b'
+OLLAMA_URL = "http://localhost:11434/api/chat"
 
 # Schema context with business rules and few-shot examples
 SCHEMA_CONTEXT = SCHEMA_RICH
+
+
+def call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.1) -> str:
+    """Helper function to call local Ollama chat endpoint."""
+    payload = {
+        "model": MODEL_ID,
+        "messages": [],
+        "options": {
+            "temperature": temperature
+        },
+        "stream": False
+    }
+    if system_prompt:
+        payload["messages"].append({"role": "system", "content": system_prompt})
+    payload["messages"].append({"role": "user", "content": user_prompt})
+    
+    req = urllib.request.Request(
+        OLLAMA_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req) as res:
+            resp_data = json.loads(res.read().decode("utf-8"))
+            return resp_data["message"]["content"]
+    except Exception as e:
+        print(f"[Ollama Error] Could not connect to local Ollama server at {OLLAMA_URL}. Error: {e}")
+        print("Please ensure Ollama is running and has the model 'qwen2.5:7b' pulled.")
+        return ""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -50,7 +60,7 @@ SCHEMA_CONTEXT = SCHEMA_RICH
 # ══════════════════════════════════════════════════════════════
 
 def extract_sql(response_text: str) -> str:
-    """Extract clean SQL from Nova's response (handles markdown fences)."""
+    """Extract clean SQL from Ollama's response (handles markdown fences)."""
     # Pattern 1: ```sql ... ```
     match = re.search(r"```sql\s*(.*?)\s*```", response_text, re.DOTALL)
     if match:
@@ -66,8 +76,8 @@ def extract_sql(response_text: str) -> str:
 
 
 def generate_sql(question: str) -> dict:
-    """Send business question to Nova Pro with full schema context. Returns SQL."""
-    print(f"\n[Nova Pro] Generating SQL for: '{question}'")
+    """Send business question to Qwen 2.5 via Ollama with full schema context. Returns SQL."""
+    print(f"\n[Ollama - {MODEL_ID}] Generating SQL for: '{question}'")
 
     system_prompt = f"""You are a senior Snowflake SQL expert for Sigma DataTech.
 Convert business questions into correct Snowflake SQL.
@@ -84,16 +94,7 @@ INSTRUCTIONS:
 3. Use uppercase for SQL keywords and table/column names.
 4. Always add meaningful column aliases."""
 
-    response = bedrock.converse(
-        modelId=MODEL_ID,
-        system=[{"text": system_prompt}],
-        messages=[{"role": "user", "content": [{"text": f"Question: {question}"}]}],
-        inferenceConfig={"temperature": 0.1, "maxTokens": 800},
-    )
-
-    raw_text = response["output"]["message"]["content"][0]["text"]
-    tokens_in = response["usage"]["inputTokens"]
-    tokens_out = response["usage"]["outputTokens"]
+    raw_text = call_ollama(system_prompt, f"Question: {question}", temperature=0.1)
 
     # Extract explanation
     explanation = ""
@@ -103,9 +104,8 @@ INSTRUCTIONS:
             break
 
     sql = extract_sql(raw_text)
-    print(f"[Nova Pro] Explanation: {explanation}")
-    print(f"[Nova Pro] SQL:\n{sql}")
-    print(f"[Nova Pro] Tokens: {tokens_in} in / {tokens_out} out")
+    print(f"[Ollama - {MODEL_ID}] Explanation: {explanation}")
+    print(f"[Ollama - {MODEL_ID}] SQL:\n{sql}")
 
     return {"question": question, "sql": sql, "explanation": explanation}
 
@@ -242,18 +242,17 @@ def nl2sql(question: str) -> str:
     formatted = format_results(result["columns"], result["rows"])
 
     # Step 5: Generate friendly answer
-    answer_response = bedrock.converse(
-        modelId=MODEL_ID,
-        messages=[{"role": "user", "content": [{"text": (
+    answer = call_ollama(
+        system_prompt="",
+        user_prompt=(
             f"User asked: {question}\n\n"
             f"SQL run:\n{sql}\n\n"
             f"Results:\n{formatted}\n\n"
             f"Summarise in 2-3 friendly sentences for a non-technical person. "
             f"Include the key numbers. Don't mention SQL or tables."
-        )}]}],
-        inferenceConfig={"maxTokens": 300, "temperature": 0.3},
+        ),
+        temperature=0.3
     )
-    answer = answer_response["output"]["message"]["content"][0]["text"]
 
     # Step 6: Audit log
     AUDIT_LOG.append({
@@ -298,7 +297,7 @@ def test_without_context(question: str, text_to_remove: str, label: str):
 if __name__ == "__main__":
     # --- Run the full pipeline with 5 questions ---
     print("\n" + "=" * 60)
-    print("NL2SQL PIPELINE — RUNNING 5 TEST QUESTIONS")
+    print("NL2SQL PIPELINE (OLLAMA EDITION) — RUNNING 5 TEST QUESTIONS")
     print("=" * 60)
 
     nl2sql("DROP TABLE fact_transactions")
@@ -315,9 +314,9 @@ if __name__ == "__main__":
         print(f"[{status}] {entry.get('question', '')[:50]}")
 
     # --- Save audit log ---
-    with open("nl2sql_audit.json", "w") as f:
+    with open("nl2sql_audit_ollama.json", "w") as f:
         json.dump(AUDIT_LOG, f, indent=2)
-    print(f"\nAudit log saved: nl2sql_audit.json ({len(AUDIT_LOG)} entries)")
+    print(f"\nAudit log saved: nl2sql_audit_ollama.json ({len(AUDIT_LOG)} entries)")
 
     # --- Context ablation experiments ---
     print("\n\n" + "=" * 60)

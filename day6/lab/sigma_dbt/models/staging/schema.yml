@@ -1,0 +1,67 @@
+version: 2
+
+stg_fact_transactions:
+  source: sigma_analytics
+  table: fact_transactions
+  columns:
+    transaction_id:
+      description: "Unique identifier for each transaction"
+      tests:
+        - not_null
+        - unique
+    amount:
+      description: "Amount of the transaction in USD"
+    status:
+      description: "Status of the transaction (COMPLETED, FAILED, PENDING)"
+      tests:
+        - accepted_values:
+            values: ['COMPLETED', 'FAILED', 'PENDING']
+    merchant_id:
+      description: "Foreign key referencing dim_merchant"
+    customer_id:
+      description: "Foreign key referencing dim_customer"
+    transaction_date:
+      description: "Date of the transaction"
+    payment_method:
+      description: "Payment method used (CREDIT_CARD, DEBIT_CARD, UPI)"
+      tests:
+        - accepted_values:
+            values: ['CREDIT_CARD', 'DEBIT_CARD', 'UPI']
+
+stg_dim_merchant:
+  source: sigma_analytics
+  table: dim_merchant
+  columns:
+    merchant_id:
+      description: "Unique identifier for each merchant"
+      tests:
+        - not_null
+        - unique
+    merchant_name:
+      description: "Name of the merchant"
+    category:
+      description: "Category of the merchant (Food Delivery, E-Commerce, Entertainment, Travel, Grocery)"
+    city:
+      description: "City where the merchant is located"
+    onboarded_date:
+      description: "Date when the merchant was onboarded"
+
+stg_dim_customer:
+  source: sigma_analytics
+  table: dim_customer
+  columns:
+    customer_id:
+      description: "Unique identifier for each customer"
+      tests:
+        - not_null
+        - unique
+    customer_name:
+      description: "Name of the customer"
+    email:
+      description: "Email address of the customer"
+    tier:
+      description: "Customer tier (GOLD, SILVER, BRONZE)"
+    signup_date:
+      description: "Date when the customer signed up"
+    city:
+      description: "City where the customer is located"

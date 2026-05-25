@@ -1,0 +1,51 @@
+{
+  "file": "queries/my_query.sql",
+  "reviewed_at": "2026-05-25T16:23:40.519968",
+  "issues_found": 5,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect table names",
+        "line": "select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;",
+        "problem": "The table names 'my_table' and 'my_table2' do not match the schema provided.",
+        "fix": "Replace 'my_table' and 'my_table2' with the correct table names from the schema."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect table aliases",
+        "line": "select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;",
+        "problem": "The table aliases 'm' and 't' are not meaningful. They should be replaced with meaningful aliases.",
+        "fix": "Replace 'm' and 't' with meaningful aliases such as 'ft' for 'fact_transactions' and 'dm' for 'dim_merchant'."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect join condition",
+        "line": "select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;",
+        "problem": "The join condition 'm.id = t.id' is not valid for the provided schema.",
+        "fix": "Replace 'm.id = t.id' with a valid join condition such as 'ft.merchant_id = dm.merchant_id'."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect selection",
+        "line": "select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;",
+        "problem": "The selection '***gh' is not valid.",
+        "fix": "Replace '***gh' with the correct columns to select, such as 'dm.merchant_name, ft.amount'."
+      },
+      {
+        "severity": "High",
+        "category": "Readability",
+        "title": "Poor readability",
+        "line": "select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;",
+        "problem": "The query is not formatted properly and lacks meaningful aliases and comments.",
+        "fix": "Format the query properly, use meaningful aliases, and add comments where necessary."
+      }
+    ],
+    "corrected_sql": "SELECT dm.merchant_name, ft.amount FROM sigma_analytics.fact_transactions ft LEFT JOIN sigma_analytics.dim_merchant dm ON ft.merchant_id = dm.merchant_id WHERE ft.amount > 100;",
+    "summary": "The query has multiple critical issues related to correctness and readability. The corrected query properly joins the fact_transactions and dim_merchant tables and selects meaningful columns."
+  }
+}

@@ -1,0 +1,43 @@
+[
+  {
+    "question": "DROP TABLE fact_transactions",
+    "sql": "DROP TABLE IF EXISTS SIGMA_DE.PUBLIC.FACT_TRANSACTIONS;",
+    "status": "REJECTED",
+    "reason": "Rejected: must start with SELECT, got: DROP TABLE IF EXISTS SIGMA_DE."
+  },
+  {
+    "timestamp": "2026-05-25T12:47:48.947372",
+    "question": "How many transactions do we have in total?",
+    "sql": "SELECT COUNT(*) AS TOTAL_TRANSACTIONS\nFROM FACT_TRANSACTIONS\nWHERE TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31';",
+    "row_count": 1,
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-05-25T12:47:53.643237",
+    "question": "How many transactions failed?",
+    "sql": "SELECT COUNT(*) AS FAILED_COUNT\nFROM FACT_TRANSACTIONS\nWHERE STATUS = 'FAILED';",
+    "row_count": 1,
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-05-25T12:48:00.475700",
+    "question": "Which merchant had the highest revenue?",
+    "sql": "SELECT M.MERCHANT_NAME,\n       SUM(CASE WHEN T.STATUS = 'COMPLETED' THEN T.AMOUNT ELSE 0 END) AS REVENUE_USD\nFROM FACT_TRANSACTIONS T\nJOIN DIM_MERCHANT M ON T.MERCHANT_ID = M.MERCHANT_ID\nWHERE T.TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31'\nGROUP BY M.MERCHANT_NAME\nORDER BY REVENUE_USD DESC\nLIMIT 1;",
+    "row_count": 1,
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-05-25T12:48:07.170840",
+    "question": "What is the failure rate for each payment method?",
+    "sql": "SELECT PAYMENT_METHOD,\n       COUNT(*) AS TOTAL_TRANSACTIONS,\n       SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,\n       ROUND(100.0 * SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT\nFROM FACT_TRANSACTIONS\nGROUP BY PAYMENT_METHOD\nORDER BY FAILURE_RATE_PCT DESC;",
+    "row_count": 3,
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-05-25T12:48:13.983503",
+    "question": "What was the total revenue generated across all merchants?",
+    "sql": "SELECT SUM(CASE WHEN STATUS='COMPLETED' THEN AMOUNT ELSE 0 END) AS TOTAL_REVENUE_USD\nFROM FACT_TRANSACTIONS\nWHERE TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31';",
+    "row_count": 1,
+    "status": "SUCCESS"
+  }
+]

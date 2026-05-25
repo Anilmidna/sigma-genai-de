@@ -1,0 +1,100 @@
+version: 2
+
+mart_fact_transactions:
+  description: "Mart for aggregated transaction data with business metrics."
+  columns:
+    - name: transaction_id
+      description: "Unique identifier for each transaction."
+    - name: amount
+      description: "Amount of the transaction in USD."
+    - name: status
+      description: "Status of the transaction: COMPLETED, FAILED, PENDING."
+    - name: merchant_id
+      description: "Foreign key to dim_merchant."
+    - name: customer_id
+      description: "Foreign key to dim_customer."
+    - name: transaction_date
+      description: "Date of the transaction."
+    - name: payment_method
+      description: "Payment method used for the transaction: CREDIT_CARD, DEBIT_CARD, UPI."
+    - name: merchant_name
+      description: "Name of the merchant from dim_merchant."
+    - name: total_revenue
+      description: "Total revenue from completed transactions."
+    - name: failure_rate_pct
+      description: "Failure rate of transactions as a percentage."
+  tests:
+    - not_null:
+        column_name: merchant_id
+    - generic_test:
+        name: failure_rate_pct_range
+        arguments:
+          column_name: failure_rate_pct
+          min_value: 0
+          max_value: 100
+    - generic_test:
+        name: total_revenue_non_negative
+        arguments:
+          column_name: total_revenue
+          min_value: 0
+    - generic_test:
+        name: invalid_status_cancelled
+        arguments:
+          column_name: status
+          accepted_values: ['COMPLETED', 'FAILED', 'PENDING']
+```
+
+```sql
+WITH completed_transactions AS (
+    SELECT
+        transaction_id,
+        amount,
+        status,
+        merchant_id,
+        customer_id,
+        transaction_date,
+        payment_method
+    FROM {{ ref('fact_transactions') }}
+    WHERE status = 'COMPLETED'
+),
+
+total_revenue AS (
+    SELECT
+        SUM(amount) AS total_revenue
+    FROM completed_transactions
+),
+
+failure_rate AS (
+    SELECT
+        COUNT(CASE WHEN status = 'FAILED' THEN 1 END) * 100.0 / COUNT(*) AS failure_rate_pct
+    FROM {{ ref('fact_transactions') }}
+),
+
+joined_transactions AS (
+    SELECT
+        ft.transaction_id,
+        ft.amount,
+        ft.status,
+        ft.merchant_id,
+        ft.customer_id,
+        ft.transaction_date,
+        ft.payment_method,
+        dm.merchant_name
+    FROM {{ ref('fact_transactions') }} ft
+    JOIN {{ ref('dim_merchant') }} dm ON ft.merchant_id = dm.merchant_id
+)
+
+SELECT
+    jt.transaction_id,
+    jt.amount,
+    jt.status,
+    jt.merchant_id,
+    jt.customer_id,
+    jt.transaction_date,
+    jt.payment_method,
+    jt.merchant_name,
+    tr.total_revenue,
+    fr.failure_rate_pct
+FROM joined_transactions jt
+CROSS JOIN total_revenue tr
+CROSS JOIN failure_rate fr

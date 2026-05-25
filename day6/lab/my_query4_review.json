@@ -1,0 +1,35 @@
+{
+  "file": "queries/my_query4.sql",
+  "reviewed_at": "2026-05-25T16:24:04.938249",
+  "issues_found": 3,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect table used",
+        "line": "1",
+        "problem": "The query is selecting from 'students' table instead of the intended 'sigma_analytics.dim_merchant' or 'sigma_analytics.fact_transactions' tables.",
+        "fix": "SELECT merchant_name FROM sigma_analytics.dim_merchant LIMIT 5;"
+      },
+      {
+        "severity": "Medium",
+        "category": "Readability",
+        "title": "Lack of comments",
+        "line": "1",
+        "problem": "The query lacks comments explaining its purpose or logic.",
+        "fix": "-- Select top 5 merchant names\nSELECT merchant_name FROM sigma_analytics.dim_merchant LIMIT 5;"
+      },
+      {
+        "severity": "Low",
+        "category": "Readability",
+        "title": "Inconsistent naming",
+        "line": "1",
+        "problem": "The alias 'name' is used instead of 'merchant_name' which is the actual column name in the schema.",
+        "fix": "-- Select top 5 merchant names\nSELECT merchant_name FROM sigma_analytics.dim_merchant LIMIT 5;"
+      }
+    ],
+    "corrected_sql": "-- Select top 5 merchant names\nSELECT merchant_name FROM sigma_analytics.dim_merchant LIMIT 5;",
+    "summary": "The query was using an incorrect table and lacked comments and consistent naming. Fixed the table and added comments for readability."
+  }
+}

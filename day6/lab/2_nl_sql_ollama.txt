@@ -1,0 +1,196 @@
+venv) as-mac-1184@AS-MAC-1184 lab % python3 2_nl_sql_ollama.py 
+
+============================================================
+NL2SQL PIPELINE (OLLAMA EDITION) — RUNNING 5 TEST QUESTIONS
+============================================================
+
+============================================================
+QUESTION: DROP TABLE fact_transactions
+============================================================
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'DROP TABLE fact_transactions'
+[Ollama - qwen2.5:7b] Explanation: The question is to drop the `FACT_TRANSACTIONS` table, but it should be noted that this action will permanently delete the data and structure of the table.
+[Ollama - qwen2.5:7b] SQL:
+DROP TABLE FACT_TRANSACTIONS;
+[Validator] Rejected: must start with SELECT, got: DROP TABLE FACT_TRANSACTIONS;
+
+============================================================
+QUESTION: How many transactions do we have in total?
+============================================================
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'How many transactions do we have in total?'
+[Ollama - qwen2.5:7b] Explanation: To get the total number of transactions, we need to count all rows in the FACT_TRANSACTIONS table.
+[Ollama - qwen2.5:7b] SQL:
+SELECT COUNT(*) AS TOTAL_TRANSACTIONS 
+FROM FACT_TRANSACTIONS;
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: We have a total of 50 transactions recorded. That means there were 50 times something was bought or sold in our records.
+
+============================================================
+QUESTION: How many transactions failed?
+============================================================
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'How many transactions failed?'
+[Ollama - qwen2.5:7b] Explanation: Count the number of transactions with a status of 'FAILED'.
+[Ollama - qwen2.5:7b] SQL:
+SELECT COUNT(*) AS FAILED_COUNT FROM FACT_TRANSACTIONS WHERE STATUS = 'FAILED';
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: Out of all the transactions, 15 did not go through successfully. So, 15 transactions failed.
+
+============================================================
+QUESTION: Which merchant had the highest revenue?
+============================================================
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'Which merchant had the highest revenue?'
+[Ollama - qwen2.5:7b] Explanation: We need to find the merchant with the highest revenue by summing up the amounts of completed transactions.
+[Ollama - qwen2.5:7b] SQL:
+SELECT m.MERCHANT_NAME,
+       SUM(CASE WHEN t.STATUS='COMPLETED' THEN t.AMOUNT ELSE 0 END) AS REVENUE_USD
+FROM FACT_TRANSACTIONS t
+JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+WHERE t.TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31'
+GROUP BY m.MERCHANT_NAME
+ORDER BY REVENUE_USD DESC
+LIMIT 1;
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: In January from the 15th to the 31st, the merchant Zepto made the most money with $5,485.49 in sales!
+
+============================================================
+QUESTION: What is the failure rate for each payment method?
+============================================================
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'What is the failure rate for each payment method?'
+[Ollama - qwen2.5:7b] Explanation: Calculate the failure rate as a percentage for each payment method.
+[Ollama - qwen2.5:7b] SQL:
+SELECT 
+    PAYMENT_METHOD,
+    COUNT(*) AS TOTAL_TRANSACTIONS,
+    SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,
+    ROUND(100.0 * SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT
+FROM 
+    FACT_TRANSACTIONS
+WHERE 
+    TRANSACTION_DATE BETWEEN DATE '2024-01-15' AND DATE '2024-01-31'
+GROUP BY 
+    PAYMENT_METHOD
+ORDER BY 
+    FAILURE_RATE_PCT DESC;
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 3 rows
+
+ANSWER: In January from the 15th to the 31st, debit cards had the highest failure rate at 47.06%, followed by UPI with 31.25%, and credit cards with only 11.76%. This means that out of every 100 transactions, about 47 using a debit card, 31 using UPI, and just 12 using a credit card did not go through successfully.
+
+============================================================
+QUESTION: What was the total revenue generated across all merchants?
+============================================================
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'What was the total revenue generated across all merchants?'
+[Ollama - qwen2.5:7b] Explanation: Calculate the total revenue by summing up the amounts where the transaction status is 'COMPLETED'.
+[Ollama - qwen2.5:7b] SQL:
+SELECT SUM(CASE WHEN STATUS = 'COMPLETED' THEN AMOUNT ELSE 0 END) AS TOTAL_REVENUE_USD
+FROM FACT_TRANSACTIONS
+WHERE TRANSACTION_DATE BETWEEN DATE '2024-01-15' AND DATE '2024-01-31';
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: From January 15 to January 31, 2024, all merchants together made $11,120.99 from completed transactions.
+
+============================================================
+AUDIT LOG
+============================================================
+[REJECTED] DROP TABLE fact_transactions
+[SUCCESS] How many transactions do we have in total?
+[SUCCESS] How many transactions failed?
+[SUCCESS] Which merchant had the highest revenue?
+[SUCCESS] What is the failure rate for each payment method?
+[SUCCESS] What was the total revenue generated across all me
+
+Audit log saved: nl2sql_audit_ollama.json (6 entries)
+
+
+============================================================
+CONTEXT ABLATION EXPERIMENTS
+============================================================
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EXPERIMENT: Removed 'Revenue business rule'
+Question: What is the net settled amount excluding held transactions?
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'What is the net settled amount excluding held transactions?'
+[Ollama - qwen2.5:7b] Explanation: To calculate the net settled amount, we need to exclude PENDING transactions and sum up the COMPLETED ones.
+[Ollama - qwen2.5:7b] SQL:
+SELECT SUM(AMOUNT) AS NET_SETTLED_AMOUNT_USD
+FROM FACT_TRANSACTIONS
+WHERE STATUS = 'COMPLETED';
+SQL generated: SELECT SUM(AMOUNT) AS NET_SETTLED_AMOUNT_USD
+FROM FACT_TRANSACTIONS
+WHERE STATUS = 'COMPLETED';
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EXPERIMENT: Removed 'JOIN relationship hint'
+Question: Which merchant had the most transactions?
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'Which merchant had the most transactions?'
+[Ollama - qwen2.5:7b] Explanation: To find the merchant with the most transactions, we need to count the number of transactions per merchant and order by this count in descending order, then limit the result to 1.
+[Ollama - qwen2.5:7b] SQL:
+SELECT m.MERCHANT_NAME,
+       COUNT(t.TRANSACTION_ID) AS TRANSACTION_COUNT
+FROM FACT_TRANSACTIONS t
+JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+WHERE t.TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31'
+GROUP BY m.MERCHANT_NAME
+ORDER BY TRANSACTION_COUNT DESC
+LIMIT 1;
+SQL generated: SELECT m.MERCHANT_NAME,
+       COUNT(t.TRANSACTION_ID) AS TRANSACTION_COUNT
+FROM FACT_TRANSACTIONS t
+JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+WHERE t.TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31'
+GROUP BY m.MERCHANT_NAME
+ORDER BY TRANSACTION_COUNT DESC
+LIMIT 1;
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EXPERIMENT: Removed 'Few-shot examples'
+Question: Show failure rate by payment method
+
+[Ollama - qwen2.5:7b] Generating SQL for: 'Show failure rate by payment method'
+[Ollama - qwen2.5:7b] Explanation: Calculate the failure rate for each payment method as a percentage.
+[Ollama - qwen2.5:7b] SQL:
+SELECT 
+    PAYMENT_METHOD,
+    COUNT(*) AS TOTAL_TRANSACTIONS,
+    SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,
+    ROUND(100.0 * SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT
+FROM 
+    FACT_TRANSACTIONS
+GROUP BY 
+    PAYMENT_METHOD
+ORDER BY 
+    FAILURE_RATE_PCT DESC;
+SQL generated: SELECT 
+    PAYMENT_METHOD,
+    COUNT(*) AS TOTAL_TRANSACTIONS,
+    SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,
+    ROUND(100.0 * SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT
+FROM 
+    FACT_TRANSACTIONS
+GROUP BY 
+    PAYMENT_METHOD
+ORDER BY 
+    FAILURE_RATE_PCT DESC;
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+(venv) as-mac-1184@AS-MAC-1184 lab % 

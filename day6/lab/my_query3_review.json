@@ -1,0 +1,35 @@
+{
+  "file": "queries/my_query3.sql",
+  "reviewed_at": "2026-05-25T16:24:00.041395",
+  "issues_found": 3,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Missing JOIN condition",
+        "line": "FROM customers, orders",
+        "problem": "The query pairs every customer with every order due to the absence of a JOIN condition.",
+        "fix": "FROM customers JOIN orders ON customers.customer_id = orders.customer_id"
+      },
+      {
+        "severity": "Medium",
+        "category": "Readability",
+        "title": "Implicit join syntax",
+        "line": "FROM customers, orders",
+        "problem": "Using the old implicit join syntax can lead to confusion and errors.",
+        "fix": "FROM customers JOIN orders ON customers.customer_id = orders.customer_id"
+      },
+      {
+        "severity": "Medium",
+        "category": "Readability",
+        "title": "Missing table aliases",
+        "line": "SELECT customers.name, orders.order_date FROM customers, orders",
+        "problem": "Table aliases are not used, making the query harder to read and maintain.",
+        "fix": "SELECT c.name, o.order_date FROM dim_customer c JOIN dim_orders o ON c.customer_id = o.customer_id"
+      }
+    ],
+    "corrected_sql": "SELECT c.customer_name, o.transaction_date FROM sigma_analytics.dim_customer c JOIN sigma_analytics.fact_transactions o ON c.customer_id = o.customer_id",
+    "summary": "The query had a critical correctness issue due to missing join condition, and readability issues due to implicit join syntax and missing table aliases."
+  }
+}

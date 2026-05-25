@@ -1,0 +1,190 @@
+(venv) as-mac-1184@AS-MAC-1184 lab % python3 2_nl2sql_pipeline.py
+
+============================================================
+NL2SQL PIPELINE — RUNNING 5 TEST QUESTIONS
+============================================================
+
+============================================================
+QUESTION: DROP TABLE fact_transactions
+============================================================
+
+[Nova Pro] Generating SQL for: 'DROP TABLE fact_transactions'
+[Nova Pro] Explanation: This SQL command will drop the `FACT_TRANSACTIONS` table from the database.
+[Nova Pro] SQL:
+DROP TABLE FACT_TRANSACTIONS;
+[Nova Pro] Tokens: 831 in / 66 out
+[Validator] Rejected: must start with SELECT, got: DROP TABLE FACT_TRANSACTIONS;
+
+============================================================
+QUESTION: How many transactions do we have in total?
+============================================================
+
+[Nova Pro] Generating SQL for: 'How many transactions do we have in total?'
+[Nova Pro] Explanation: This query counts the total number of transactions in the FACT_TRANSACTIONS table.
+[Nova Pro] SQL:
+SELECT COUNT(*) AS TOTAL_TRANSACTIONS
+FROM FACT_TRANSACTIONS;
+[Nova Pro] Tokens: 833 in / 44 out
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: There are a total of 50 transactions recorded. This count gives us a clear overview of the overall activity within the system.
+
+============================================================
+QUESTION: How many transactions failed?
+============================================================
+
+[Nova Pro] Generating SQL for: 'How many transactions failed?'
+[Nova Pro] Explanation: Count the number of transactions that have a status of 'FAILED'.
+[Nova Pro] SQL:
+SELECT COUNT(*) AS FAILED_COUNT 
+FROM FACT_TRANSACTIONS 
+WHERE STATUS = 'FAILED';
+[Nova Pro] Tokens: 829 in / 46 out
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: There were 15 transactions that did not go through successfully. This means that out of all the transactions attempted, 15 of them failed.
+
+============================================================
+QUESTION: Which merchant had the highest revenue?
+============================================================
+
+[Nova Pro] Generating SQL for: 'Which merchant had the highest revenue?'
+[Nova Pro] Explanation: This query calculates the revenue for each merchant by summing the amounts of completed transactions and then identifies the merchant with the highest revenue.
+[Nova Pro] SQL:
+SELECT m.MERCHANT_NAME,
+       SUM(CASE WHEN t.STATUS='COMPLETED' THEN t.AMOUNT ELSE 0 END) AS REVENUE_USD
+FROM FACT_TRANSACTIONS t
+JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+GROUP BY m.MERCHANT_NAME
+ORDER BY REVENUE_USD DESC
+LIMIT 1;
+[Nova Pro] Tokens: 831 in / 132 out
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: The merchant with the highest revenue is Zepto, which earned $5,485.49. This amount represents the total revenue from completed transactions.
+
+============================================================
+QUESTION: What is the failure rate for each payment method?
+============================================================
+
+[Nova Pro] Generating SQL for: 'What is the failure rate for each payment method?'
+[Nova Pro] Explanation: This query calculates the failure rate for each payment method by counting the total transactions and the failed transactions, then dividing the failed count by the total count and multiplying by 100 to get the percentage.
+[Nova Pro] SQL:
+SELECT PAYMENT_METHOD,
+       COUNT(*) AS TOTAL_TRANSACTIONS,
+       SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,
+       ROUND(100.0 * SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT
+FROM FACT_TRANSACTIONS
+GROUP BY PAYMENT_METHOD
+ORDER BY FAILURE_RATE_PCT DESC;
+[Nova Pro] Tokens: 834 in / 162 out
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 3 rows
+
+ANSWER: Here's a summary of the failure rates for each payment method: Debit cards have the highest failure rate at 47.06%, with 8 out of 17 transactions failing. UPI follows with a failure rate of 31.25%, where 5 out of 16 transactions failed. Credit cards have the lowest failure rate at 11.76%, with only 2 out of 17 transactions failing.
+
+============================================================
+QUESTION: What was the total revenue generated across all merchants?
+============================================================
+
+[Nova Pro] Generating SQL for: 'What was the total revenue generated across all merchants?'
+[Nova Pro] Explanation: The total revenue is calculated by summing the amounts of all completed transactions.
+[Nova Pro] SQL:
+SELECT SUM(AMOUNT) AS TOTAL_REVENUE_USD
+FROM FACT_TRANSACTIONS
+WHERE STATUS = 'COMPLETED';
+[Nova Pro] Tokens: 834 in / 53 out
+[Validator] Validation passed
+[Snowflake] Executing...
+[Snowflake] Returned 1 rows
+
+ANSWER: The total revenue generated from all completed transactions across all merchants is $11,120.99. This figure represents the sum of all successfully processed payments.
+
+============================================================
+AUDIT LOG
+============================================================
+[REJECTED] DROP TABLE fact_transactions
+[SUCCESS] How many transactions do we have in total?
+[SUCCESS] How many transactions failed?
+[SUCCESS] Which merchant had the highest revenue?
+[SUCCESS] What is the failure rate for each payment method?
+[SUCCESS] What was the total revenue generated across all me
+
+Audit log saved: nl2sql_audit.json (6 entries)
+
+
+============================================================
+CONTEXT ABLATION EXPERIMENTS
+============================================================
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EXPERIMENT: Removed 'Revenue business rule'
+Question: What is the net settled amount excluding held transactions?
+
+[Nova Pro] Generating SQL for: 'What is the net settled amount excluding held transactions?'
+[Nova Pro] Explanation: The net settled amount is calculated by summing the amounts of transactions with a status of 'COMPLETED', excluding those with a status of 'PENDING'.
+[Nova Pro] SQL:
+SELECT SUM(AMOUNT) AS NET_SETTLED_AMOUNT_USD
+FROM FACT_TRANSACTIONS
+WHERE STATUS = 'COMPLETED';
+[Nova Pro] Tokens: 805 in / 72 out
+SQL generated: SELECT SUM(AMOUNT) AS NET_SETTLED_AMOUNT_USD
+FROM FACT_TRANSACTIONS
+WHERE STATUS = 'COMPLETED';
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EXPERIMENT: Removed 'JOIN relationship hint'
+Question: Which merchant had the most transactions?
+
+[Nova Pro] Generating SQL for: 'Which merchant had the most transactions?'
+[Nova Pro] Explanation: This query identifies the merchant with the highest number of transactions by joining the FACT_TRANSACTIONS table with the DIM_MERCHANT table and counting the transactions per merchant.
+[Nova Pro] SQL:
+SELECT m.MERCHANT_NAME,
+       COUNT(t.TRANSACTION_ID) AS TOTAL_TRANSACTIONS
+FROM FACT_TRANSACTIONS t
+JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+GROUP BY m.MERCHANT_NAME
+ORDER BY TOTAL_TRANSACTIONS DESC
+LIMIT 1;
+[Nova Pro] Tokens: 801 in / 129 out
+SQL generated: SELECT m.MERCHANT_NAME,
+       COUNT(t.TRANSACTION_ID) AS TOTAL_TRANSACTIONS
+FROM FACT_TRANSACTIONS t
+JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+GROUP BY m.MERCHANT_NAME
+ORDER BY TOTAL_TRANSACTIONS DESC
+LIMIT 1;
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EXPERIMENT: Removed 'Few-shot examples'
+Question: Show failure rate by payment method
+
+[Nova Pro] Generating SQL for: 'Show failure rate by payment method'
+[Nova Pro] Explanation: This query calculates the failure rate for each payment method by counting the total number of transactions and the number of failed transactions, then dividing the failed count by the total count and multiplying by 100 to get the percentage.
+[Nova Pro] SQL:
+SELECT PAYMENT_METHOD,
+       COUNT(*) AS TOTAL_TRANSACTIONS,
+       SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,
+       ROUND(100.0 * SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT
+FROM FACT_TRANSACTIONS
+GROUP BY PAYMENT_METHOD
+ORDER BY FAILURE_RATE_PCT DESC;
+[Nova Pro] Tokens: 816 in / 166 out
+SQL generated: SELECT PAYMENT_METHOD,
+       COUNT(*) AS TOTAL_TRANSACTIONS,
+       SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,
+       ROUND(100.0 * SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT
+FROM FACT_TRANSACTIONS
+GROUP BY PAYMENT_METHOD
+ORDER BY FAILURE_RATE_PCT DESC;
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+(venv) as-mac-1184@AS-MAC-1184 lab % 
