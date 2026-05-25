@@ -1,0 +1,63 @@
+version: 2
+
+mart_transactions:
+  description: "Mart for transaction analysis including revenue, failure rate, and merchant details."
+  columns:
+    - name: transaction_id
+      description: "Unique identifier for each transaction."
+      tests:
+        - not_null
+        - unique
+    - name: amount
+      description: "Amount of the transaction in USD."
+      tests:
+        - not_null
+    - name: status
+      description: "Status of the transaction (COMPLETED, FAILED, PENDING)."
+      tests:
+        - accepted_values:
+            values: ['COMPLETED', 'FAILED', 'PENDING']
+        - not_null
+    - name: merchant_id
+      description: "Foreign key to dim_merchant."
+      tests:
+        - not_null
+        - relationships:
+            to: ref('dim_merchant')
+            field: merchant_id
+    - name: customer_id
+      description: "Foreign key to dim_customer."
+      tests:
+        - not_null
+        - relationships:
+            to: ref('dim_customer')
+            field: customer_id
+    - name: transaction_date
+      description: "Date of the transaction."
+      tests:
+        - not_null
+    - name: payment_method
+      description: "Payment method used (CREDIT_CARD, DEBIT_CARD, UPI)."
+      tests:
+        - not_null
+    - name: merchant_name
+      description: "Name of the merchant from dim_merchant."
+      tests:
+        - not_null
+    - name: total_revenue
+      description: "Total revenue from completed transactions."
+      tests:
+        - not_null
+        - generic_test:
+            expression: "total_revenue >= 0"
+    - name: failure_rate_pct
+      description: "Percentage of failed transactions."
+      tests:
+        - not_null
+        - generic_test:
+            expression: "failure_rate_pct BETWEEN 0 AND 100"
+    - name: bad_data_status
+      description: "Test to check for invalid status values."
+      tests:
+        - generic_test:
+            expression: "bad_data_status IS NULL"
