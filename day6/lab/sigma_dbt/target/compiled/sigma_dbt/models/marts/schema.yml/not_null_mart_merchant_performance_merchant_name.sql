@@ -1,10 +1,48 @@
+
+    
+    
+
+
+
+with __dbt__cte__stg_transactions as (
+WITH raw_transactions AS (
+    SELECT
+        transaction_id,
+        amount,
+        status,
+        merchant_id,
+        customer_id,
+        transaction_date,
+        payment_method
+    FROM
+        SIGMA_DE.PUBLIC.fact_transactions
+),
+
+cleaned_transactions AS (
+    SELECT
+        transaction_id,
+        CAST(amount AS DECIMAL(10,2)) AS amount,
+        status,
+        merchant_id,
+        customer_id,
+        CAST(transaction_date AS DATE) AS transaction_date,
+        payment_method,
+        CURRENT_TIMESTAMP AS loaded_at
+    FROM
+        raw_transactions
+    WHERE
+        merchant_id NOT LIKE 'TEST_%'
+)
+
+SELECT * FROM cleaned_transactions
+),  __dbt__cte__mart_merchant_performance as (
 WITH completed_transactions AS (
     SELECT
         merchant_id,
         SUM(amount) AS total_revenue,
         COUNT(*) AS total_transactions
     FROM
-        {{ ref('stg_transactions') }}
+        __dbt__cte__stg_transactions
     WHERE
         status = 'COMPLETED'
     GROUP BY
@@ -16,7 +54,7 @@ failed_transactions AS (
         merchant_id,
         COUNT(*) AS failed_count
     FROM
-        {{ ref('stg_transactions') }}
+        __dbt__cte__stg_transactions
     WHERE
         status = 'FAILED'
     GROUP BY
@@ -28,7 +66,7 @@ avg_transaction_value AS (
         merchant_id,
         AVG(amount) AS avg_transaction_value
     FROM
-        {{ ref('stg_transactions') }}
+        __dbt__cte__stg_transactions
     WHERE
         status = 'COMPLETED'
     GROUP BY
@@ -40,7 +78,7 @@ unique_customers AS (
         merchant_id,
         COUNT(DISTINCT customer_id) AS unique_customers
     FROM
-        {{ ref('stg_transactions') }}
+        __dbt__cte__stg_transactions
     WHERE
         status = 'COMPLETED'
     GROUP BY
@@ -62,7 +100,7 @@ merchant_kpis AS (
         COALESCE(atv.avg_transaction_value, 0) AS avg_transaction_value,
         COALESCE(uc.unique_customers, 0) AS unique_customers
     FROM
-        {{ source('sigma_analytics', 'dim_merchant') }} dm
+        SIGMA_DE.PUBLIC.dim_merchant dm
         LEFT JOIN completed_transactions ct ON dm.merchant_id = ct.merchant_id
         LEFT JOIN failed_transactions ft ON dm.merchant_id = ft.merchant_id
         LEFT JOIN avg_transaction_value atv ON dm.merchant_id = atv.merchant_id
@@ -73,3 +111,8 @@ SELECT
     *
 FROM
     merchant_kpis
+) select merchant_name
+from __dbt__cte__mart_merchant_performance
+where merchant_name is null
+
+

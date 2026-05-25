@@ -8,7 +8,7 @@ WITH raw_transactions AS (
         transaction_date,
         payment_method
     FROM
-        {{ source('sigma_analytics', 'fact_transactions') }}
+        SIGMA_DE.PUBLIC.fact_transactions
 ),
 
 cleaned_transactions AS (

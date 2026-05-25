@@ -1,3 +1,8 @@
+
+    
+    
+
+with  __dbt__cte__stg_transactions as (
 WITH raw_transactions AS (
     SELECT
         transaction_id,
@@ -8,7 +13,7 @@ WITH raw_transactions AS (
         transaction_date,
         payment_method
     FROM
-        {{ source('sigma_analytics', 'fact_transactions') }}
+        SIGMA_DE.PUBLIC.fact_transactions
 ),
 
 cleaned_transactions AS (
@@ -28,3 +33,21 @@ cleaned_transactions AS (
 )
 
 SELECT * FROM cleaned_transactions
+), all_values as (
+
+    select
+        status as value_field,
+        count(*) as n_records
+
+    from __dbt__cte__stg_transactions
+    group by status
+
+)
+
+select *
+from all_values
+where value_field not in (
+    'COMPLETED','FAILED','PENDING'
+)
+
+

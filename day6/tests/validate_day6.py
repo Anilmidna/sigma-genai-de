@@ -196,6 +196,47 @@ if os.path.isdir(dbt_output):
           "Both staging and marts should have schema.yml")
 
 
+# ── MODULE 5: Run dbt Project ────────────────────────────────
+print("\n── MODULE 5: Run dbt Project ────────────────────────")
+
+dbt_target = os.path.join(lab_dir, "sigma_dbt", "target")
+run_results_path = os.path.join(dbt_target, "run_results.json")
+manifest_path = os.path.join(dbt_target, "manifest.json")
+
+check("sigma_dbt/target/ exists (dbt was run)",
+      os.path.isdir(dbt_target),
+      "Run: cd sigma_dbt && dbt run")
+
+check("run_results.json exists (dbt run completed)",
+      os.path.exists(run_results_path),
+      "Run: dbt run inside sigma_dbt/")
+
+if os.path.exists(run_results_path):
+    try:
+        with open(run_results_path) as f:
+            run_results = json.load(f)
+
+        results_list = run_results.get("results", [])
+        success_count = sum(1 for r in results_list if r.get("status") in ("success", "pass"))
+        fail_count = sum(1 for r in results_list if r.get("status") == "fail")
+
+        check(f"At least 2 models ran successfully",
+              success_count >= 2,
+              "dbt run should show stg_transactions and mart_merchant_performance as OK")
+
+        check("dbt test was run (results include tests)",
+              len(results_list) > 2,
+              "Run: dbt test (or dbt build) inside sigma_dbt/")
+
+        check("At least 1 test failed (deliberate bad data test)",
+              fail_count >= 1,
+              "One test should fail — that is expected. If 0 failures, check your marts/schema.yml")
+
+    except json.JSONDecodeError:
+        check("run_results.json is valid JSON", False,
+              "File exists but isn't valid JSON")
+
+
 # ── STRETCH: SQL Review Agent ─────────────────────────────────
 print("\n── STRETCH: SQL Review Agent (bonus) ────────────────")
 

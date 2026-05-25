@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+    "dbt_version": "1.11.11",
+    "generated_at": "2026-05-25T13:09:07.937013Z",
+    "invocation_id": "1131756c-f80c-4361-977f-b86465a331d9",
+    "invocation_started_at": "2026-05-25T13:09:06.561983Z",
+    "env": {}
+  },
+  "results": [
+    {
+      "status": "success",
+      "timing": [],
+      "thread_id": "Thread-1",
+      "execution_time": 0.53,
+      "adapter_response": {
+        "code": "CREATE VIEW",
+        "rows_affected": 1
+      },
+      "message": "SUCCESS",
+      "unique_id": "model.sigma_dbt.stg_transactions"
+    },
+    {
+      "status": "success",
+      "timing": [],
+      "thread_id": "Thread-1",
+      "execution_time": 0.62,
+      "adapter_response": {
+        "code": "CREATE TABLE",
+        "rows_affected": 1
+      },
+      "message": "SUCCESS",
+      "unique_id": "model.sigma_dbt.mart_merchant_performance"
+    },
+    {
+      "status": "pass",
+      "timing": [],
+      "thread_id": "Thread-1",
+      "execution_time": 0.12,
+      "adapter_response": {},
+      "message": "PASS",
+      "unique_id": "test.sigma_dbt.unique_stg_transactions_transaction_id.not_null"
+    },
+    {
+      "status": "pass",
+      "timing": [],
+      "thread_id": "Thread-1",
+      "execution_time": 0.11,
+      "adapter_response": {},
+      "message": "PASS",
+      "unique_id": "test.sigma_dbt.not_null_stg_transactions_transaction_id.not_null"
+    },
+    {
+      "status": "fail",
+      "timing": [],
+      "thread_id": "Thread-1",
+      "execution_time": 0.15,
+      "adapter_response": {},
+      "message": "FAIL",
+      "unique_id": "test.sigma_dbt.accepted_values_stg_transactions_status"
+    }
+  ],
+  "elapsed_time": 1.5,
+  "args": {
+    "project_dir": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day6/lab/sigma_dbt",
+    "profiles_dir": "/Users/as-mac-1184/.dbt"
+  }
+}

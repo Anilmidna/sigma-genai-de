@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 venv/
+dbt_venv/
 env/
 .env
 .env.local

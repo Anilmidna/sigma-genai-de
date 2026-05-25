@@ -1,4 +1,11 @@
-WITH raw_transactions AS (
+
+  create or replace   view SIGMA_DE.PUBLIC.stg_transactions
+  
+  
+  
+  
+  as (
+    WITH raw_transactions AS (
     SELECT
         transaction_id,
         amount,
@@ -8,7 +15,7 @@ WITH raw_transactions AS (
         transaction_date,
         payment_method
     FROM
-        {{ source('sigma_analytics', 'fact_transactions') }}
+        SIGMA_DE.PUBLIC.fact_transactions
 ),
 
 cleaned_transactions AS (
@@ -28,3 +35,5 @@ cleaned_transactions AS (
 )
 
 SELECT * FROM cleaned_transactions
+  );
+
