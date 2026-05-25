@@ -5,4 +5,4 @@ AND o.amount > (
     SELECT AVG(amount)
     FROM orders
     WHERE user_id = u.user_id
-);
+); 
