@@ -1,0 +1,1 @@
+select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;

@@ -1,0 +1,51 @@
+{
+  "file": "queries/my_query2.sql",
+  "reviewed_at": "2026-05-25T18:42:11.711368",
+  "issues_found": 5,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect table reference",
+        "line": "1",
+        "problem": "The query references a table 'users' which does not exist in the provided schema.",
+        "fix": "Replace 'users' with the correct table name, likely 'sigma_analytics.fact_transactions'."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect WHERE clause",
+        "line": "1",
+        "problem": "The 'WHERE' clause is incorrectly placed before the 'FROM' clause.",
+        "fix": "Move the 'WHERE' clause after the 'FROM' clause."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Missing join with dim_merchant",
+        "line": "0",
+        "problem": "The query does not join with the 'dim_merchant' table to get merchant names.",
+        "fix": "Add a JOIN clause to include 'dim_merchant'."
+      },
+      {
+        "severity": "Medium",
+        "category": "Performance",
+        "title": "Potential performance issue",
+        "line": "0",
+        "problem": "Using SELECT * can lead to performance issues by fetching unnecessary columns.",
+        "fix": "Specify only the required columns in the SELECT clause."
+      },
+      {
+        "severity": "Low",
+        "category": "Readability",
+        "title": "Lack of comments",
+        "line": "0",
+        "problem": "The query lacks comments explaining the logic or purpose.",
+        "fix": "Add comments to explain the purpose and logic of the query."
+      }
+    ],
+    "corrected_sql": "SELECT ft.transaction_id, ft.amount, ft.status, ft.merchant_id, dm.merchant_name, ft.customer_id, ft.transaction_date, ft.payment_method FROM sigma_analytics.fact_transactions ft JOIN sigma_analytics.dim_merchant dm ON ft.merchant_id = dm.merchant_id WHERE ft.status = 'COMPLETED';",
+    "summary": "The query had critical correctness issues and lacked readability. The corrected query now includes the necessary join and specifies the required columns."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "file": "queries/my_query.sql",
+  "reviewed_at": "2026-05-25T18:42:05.466265",
+  "issues_found": 4,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect table names",
+        "line": "select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;",
+        "problem": "The table names 'my_table' and 'my_table2' do not match the schema provided.",
+        "fix": "Replace'my_table' and'my_table2' with the correct table names from the schema."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect join type",
+        "line": "leeeft join",
+        "problem": "The join type 'leeeft' is not valid. It should be 'LEFT JOIN'.",
+        "fix": "Replace 'leeeft' with 'LEFT JOIN'."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect column names",
+        "line": "m.id = t.id and m.value > 100",
+        "problem": "The column names 'id' and 'value' do not exist in the provided schema.",
+        "fix": "Replace 'id' and 'value' with the correct column names from the schema."
+      },
+      {
+        "severity": "High",
+        "category": "Readability",
+        "title": "Poor readability",
+        "line": "select ***gh from my_table m leeeft join my_table2 t where m.id = t.id and m.value > 100;",
+        "problem": "The query uses incorrect table and column names, and has poor readability due to typos and incorrect SQL syntax.",
+        "fix": "Replace with a correctly formatted query using the provided schema."
+      }
+    ],
+    "corrected_sql": "SELECT ft.transaction_id, ft.amount, ft.status, dm.merchant_name, dc.customer_name FROM sigma_analytics.fact_transactions ft LEFT JOIN sigma_analytics.dim_merchant dm ON ft.merchant_id = dm.merchant_id LEFT JOIN sigma_analytics.dim_customer dc ON ft.customer_id = dc.customer_id WHERE ft.amount > 100;",
+    "summary": "The query contained multiple critical errors in table and column names, join type, and readability issues. The corrected query uses the provided schema and correct SQL syntax."
+  }
+}

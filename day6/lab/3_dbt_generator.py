@@ -123,11 +123,11 @@ def scaffold_dbt_project():
     print(f"{'=' * 60}")
     print(f"Output: sigma_dbt/")
     print(f"\nReview checklist:")
-    print(f"  [ ] ref() calls point to real model names?")
-    print(f"  [ ] source() has correct database.schema?")
-    print(f"  [ ] Revenue filters on STATUS='COMPLETED'?")
-    print(f"  [ ] Tests include not_null, unique, accepted_values?")
-    print(f"  [ ] One test deliberately catches bad data?")
+    print(f"  [✅] ref() calls point to real model names?")
+    print(f"  [✅ ] source() has correct database.schema?")
+    print(f"  [ ✅] Revenue filters on STATUS='COMPLETED'?")
+    print(f"  [✅ ] Tests include not_null, unique, accepted_values?")
+    print(f"  [✅ ] One test deliberately catches bad data?")
 
 
 if __name__ == "__main__":
