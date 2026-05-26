@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sigma Intelligence Platform — Submission Tracker</title>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #0D111F;
+    --bg-card:     #141929;
+    --bg-row-alt:  #111624;
+    --border:      #1E2740;
+    --teal:        #00D4AA;
+    --teal-dim:    #00957A;
+    --text:        #E2E8F0;
+    --text-muted:  #7A8BAD;
+    --green:       #22C55E;
+    --yellow:      #EAB308;
+    --red:         #EF4444;
+    --font:        'Segoe UI', 'Aptos Narrow', Arial, sans-serif;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: 0.02em;
+  }
+
+  .header-left p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  #last-refreshed {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  #refresh-btn {
+    background: var(--teal);
+    color: #0D111F;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: background 0.18s;
+  }
+
+  #refresh-btn:hover { background: var(--teal-dim); }
+  #refresh-btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ── Spinner ── */
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(13,17,31,0.3);
+    border-top-color: #0D111F;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  #refresh-btn.loading .spinner { display: block; }
+  #refresh-btn.loading .btn-label { display: none; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Main ── */
+  main {
+    padding: 28px 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Error / empty states ── */
+  #error-banner {
+    display: none;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.35);
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: #FCA5A5;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  /* ── Summary bar ── */
+  #summary-bar {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+
+  .summary-chip {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .summary-chip strong {
+    color: var(--teal);
+    font-size: 18px;
+    display: block;
+    line-height: 1.2;
+  }
+
+  /* ── Table wrapper ── */
+  .table-scroll {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead tr {
+    background: var(--bg-card);
+    border-bottom: 2px solid var(--border);
+  }
+
+  thead th {
+    padding: 12px 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    text-align: center;
+  }
+
+  thead th.col-name {
+    width: 200px;
+    min-width: 160px;
+    text-align: left;
+    padding-left: 18px;
+  }
+
+  thead th.col-day {
+    width: 90px;
+    min-width: 80px;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+
+  tbody tr:nth-child(even) { background: var(--bg-row-alt); }
+  tbody tr:hover { background: #192035; }
+
+  tbody td {
+    padding: 11px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  tbody td.col-name {
+    text-align: left;
+    padding-left: 18px;
+    font-weight: 500;
+  }
+
+  .github-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* ── Status cells ── */
+  .status-cell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: default;
+    transition: transform 0.12s;
+  }
+
+  .status-cell:hover { transform: scale(1.18); }
+
+  .status-complete {
+    background: rgba(34,197,94,0.15);
+    color: var(--green);
+    border: 2px solid rgba(34,197,94,0.5);
+  }
+
+  .status-partial {
+    background: rgba(234,179,8,0.15);
+    color: var(--yellow);
+    border: 2px solid rgba(234,179,8,0.5);
+  }
+
+  .status-missing {
+    background: rgba(239,68,68,0.1);
+    color: var(--red);
+    border: 2px solid rgba(239,68,68,0.35);
+  }
+
+  /* ── Tooltip ── */
+  .tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1A2035;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 13px;
+    min-width: 210px;
+    text-align: left;
+    z-index: 100;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  }
+
+  .status-cell:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .tooltip-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 7px;
+  }
+
+  .tooltip-file {
+    font-size: 12px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    word-break: break-all;
+  }
+
+  .tooltip-file:last-child { margin-bottom: 0; }
+
+  .file-ok   { color: var(--green); font-weight: 700; flex-shrink: 0; }
+  .file-miss { color: var(--red);   font-weight: 700; flex-shrink: 0; }
+
+  /* ── Summary footer row ── */
+  tfoot tr {
+    background: var(--bg-card);
+    border-top: 2px solid var(--border);
+  }
+
+  tfoot td {
+    padding: 10px 10px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  tfoot td.col-name {
+    text-align: left;
+    padding-left: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .count-badge {
+    display: inline-block;
+    background: rgba(0,212,170,0.12);
+    color: var(--teal);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  /* ── Loading overlay ── */
+  #loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13,17,31,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #loading-overlay.visible { display: flex; }
+
+  .big-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(0,212,170,0.2);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  #loading-overlay p {
+    color: var(--teal);
+    font-size: 15px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="big-spinner"></div>
+  <p>Fetching GitHub submissions&hellip;</p>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1>Sigma Intelligence Platform &mdash; Submission Tracker</h1>
+    <p>GenAI for DE &middot; Project Tracker &middot; 2026</p>
+  </div>
+  <div class="header-right">
+    <div id="last-refreshed"></div>
+    <button id="refresh-btn" onclick="loadData()">
+      <div class="spinner"></div>
+      <span class="btn-label">&#8635; Refresh</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div id="error-banner"></div>
+  <div id="summary-bar"></div>
+  <div class="table-scroll">
+    <table id="main-table">
+      <thead id="table-head"></thead>
+      <tbody id="table-body"></tbody>
+      <tfoot id="table-foot"></tfoot>
+    </table>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var API_URL = '/api/submissions';
+
+  /* ── DOM refs ── */
+  var overlay      = document.getElementById('loading-overlay');
+  var errBanner    = document.getElementById('error-banner');
+  var summaryBar   = document.getElementById('summary-bar');
+  var tableHead    = document.getElementById('table-head');
+  var tableBody    = document.getElementById('table-body');
+  var tableFoot    = document.getElementById('table-foot');
+  var refreshBtn   = document.getElementById('refresh-btn');
+  var lastRefLabel = document.getElementById('last-refreshed');
+
+  /* ── Status helpers ── */
+  var STATUS_ICON  = { complete: '&#10003;', partial: '&#126;', missing: '&#10007;' };
+  var STATUS_CLASS = { complete: 'status-complete', partial: 'status-partial', missing: 'status-missing' };
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── Render summary chips ── */
+  function renderSummary(data) {
+    var days = data.days || [];
+    var students = data.students || [];
+    var html = '';
+    days.forEach(function (d) {
+      var key = 'day' + d;
+      var complete = students.filter(function (s) {
+        return (s[key] || {}).status === 'complete';
+      }).length;
+      var partial = students.filter(function (s) {
+        return (s[key] || {}).status === 'partial';
+      }).length;
+      html += '<div class="summary-chip">' +
+        '<strong>' + complete + ' / ' + students.length + '</strong>' +
+        'Day ' + d + ' complete' +
+        (partial ? ' <span style="color:var(--yellow)">(' + partial + ' partial)</span>' : '') +
+        '</div>';
+    });
+    summaryBar.innerHTML = html;
+  }
+
+  /* ── Build tooltip HTML ── */
+  function buildTooltip(dayKey, dayNum, dayData, expectedFiles) {
+    var files = dayData.files || {};
+    if (Object.keys(files).length === 0) {
+      return '<div class="tooltip"><div class="tooltip-title">Day ' + dayNum + '</div>' +
+        '<div class="tooltip-file"><span class="file-miss">&#10007;</span> No fork found</div></div>';
+    }
+    var lines = '<div class="tooltip"><div class="tooltip-title">Day ' + dayNum + '</div>';
+    Object.keys(files).forEach(function (fname) {
+      var ok = files[fname];
+      lines += '<div class="tooltip-file">' +
+        '<span class="' + (ok ? 'file-ok' : 'file-miss') + '">' + (ok ? '&#10003;' : '&#10007;') + '</span>' +
+        '<span>' + esc(fname) + '</span></div>';
+    });
+    lines += '</div>';
+    return lines;
+  }
+
+  /* ── Render table ── */
+  function renderTable(data) {
+    var days     = data.days     || [];
+    var students = data.students || [];
+
+    /* Head */
+    var headHtml = '<tr><th class="col-name">Student</th>';
+    days.forEach(function (d) {
+      headHtml += '<th class="col-day">Day ' + d + '</th>';
+    });
+    headHtml += '</tr>';
+    tableHead.innerHTML = headHtml;
+
+    /* Body */
+    var bodyHtml = '';
+    students.forEach(function (s) {
+      bodyHtml += '<tr>';
+      bodyHtml += '<td class="col-name">' + esc(s.real_name || s.github) +
+        '<div class="github-sub">@' + esc(s.github) + '</div></td>';
+
+      days.forEach(function (d) {
+        var key     = 'day' + d;
+        var dayData = s[key] || { status: 'missing', files: {} };
+        var status  = dayData.status || 'missing';
+        var cls     = STATUS_CLASS[status] || STATUS_CLASS.missing;
+        var icon    = STATUS_ICON[status]  || STATUS_ICON.missing;
+        var tip     = buildTooltip(key, d, dayData);
+        bodyHtml += '<td><div class="status-cell ' + cls + '">' +
+          icon + tip + '</div></td>';
+      });
+
+      bodyHtml += '</tr>';
+    });
+    tableBody.innerHTML = bodyHtml;
+
+    /* Foot */
+    var footHtml = '<tr><td class="col-name">Summary</td>';
+    days.forEach(function (d) {
+      var key = 'day' + d;
+      var complete = students.filter(function (s) {
+        return (s[key] || {}).status === 'complete';
+      }).length;
+      footHtml += '<td><span class="count-badge">' + complete + ' / ' + students.length + '</span></td>';
+    });
+    footHtml += '</tr>';
+    tableFoot.innerHTML = footHtml;
+  }
+
+  /* ── Main fetch ── */
+  window.loadData = function () {
+    errBanner.style.display  = 'none';
+    overlay.classList.add('visible');
+    refreshBtn.classList.add('loading');
+    refreshBtn.disabled = true;
+
+    fetch(API_URL)
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status + ' from API');
+        return r.json();
+      })
+      .then(function (data) {
+        if (data.error) {
+          errBanner.innerHTML = '<strong>API Error:</strong> ' + esc(data.error);
+          errBanner.style.display = 'block';
+        }
+        renderSummary(data);
+        renderTable(data);
+        lastRefLabel.innerHTML = 'Last refreshed:<br><span style="color:var(--text)">' +
+          esc(data.refreshed_at || '') + '</span>';
+      })
+      .catch(function (err) {
+        errBanner.innerHTML = '<strong>Failed to load data:</strong> ' + esc(err.message) +
+          '. Make sure GITHUB_TOKEN is set in Vercel environment variables.';
+        errBanner.style.display = 'block';
+      })
+      .finally(function () {
+        overlay.classList.remove('visible');
+        refreshBtn.classList.remove('loading');
+        refreshBtn.disabled = false;
+      });
+  };
+
+  /* ── Auto-load on page open ── */
+  window.loadData();
+})();
+</script>
+</body>
+</html>
