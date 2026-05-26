@@ -1,0 +1,103 @@
+### Team 3 — Marketing Attribution Pipeline
+Sigma DataTech runs promotions via 3 channels: Email, SMS, Push. Build a pipeline that reads transaction data + a promotions CSV (`promo_id`, `channel`, `discount_pct`), joins them on `customer_id`, calculates `revenue_per_channel` and `roi_per_channel`, and writes a `marketing_attribution` Gold table.
+
+
+
+Team Nexus  ·  Marketing Attribution Pipeline(LLM)		
+		
+TEAM MEMBERS	Vineet Rana  |  Pawan Singh  |  Jignesh B  |  Challa Arun Kumar	
+		
+SCENARIO	"Sigma DataTech runs promotions via 3 channels: Email, SMS, Push. Build a pipeline that reads transaction data + a promotions CSV (`promo_id`, `channel`, `discount_pct`), joins them on `customer_id`, calculates `revenue_per_channel` and `roi_per_channel`, and writes a `marketing_attribution` Gold table.  
+
+(Hint: Join transactions + promotions CSV. Calculate revenue_per_channel and roi_per_channel)"	
+		
+PIPELINE SPEC — Fill every section below		
+OBJECTIVE	[ 1–2 sentences: what business problem does this solve? ]	
+→ Your answer	Build a daily Marketing Attribution Pipeline for Sigma DataTech to measure campaign performance across Email, SMS, and Push channels by calculating revenue and ROI per channel, enabling the marketing team to optimize promotional spend.	
+DATA SOURCES	[ Source name, format, approximate row count per day ]	
+→ Your answer	"Transactions Source
+
+Source Name: transactions
+Format: Parquet/Delta
+Approx Row Count/Day: 100000
+Columns: transaction_id, customer_id, promo_id, transaction_amount, transaction_date, payment_status
+
+Promotions Source
+
+Source Name: promotions
+Format: CSV
+Approx Row Count/Day: 500
+Columns: promo_id, channel, discount_pct"	
+BRONZE LAYER	[ Columns to ingest, metadata columns to add, partition strategy ]	
+→ Your answer	"Ingest raw transactions and promotions data without transformations.
+
+Transactions Bronze
+
+Columns: transaction_id, customer_id, promo_id, transaction_amount, transaction_date, payment_status
+Metadata Columns Added: ingestion_timestamp, source_file_name, batch_id
+Partition Strategy: transaction_date
+
+Promotions Bronze
+
+Columns: promo_id, channel, discount_pct
+Metadata Columns Added: ingestion_timestamp, source_file_name, batch_id"	
+SILVER LAYER	[ Exact casts, filter conditions, dedup key, quality halt threshold ]	
+→ Your answer	"Clean and standardize data.
+
+Transactions Rules
+
+Cast transaction_amount to DECIMAL(18,2)
+Cast transaction_date to TIMESTAMP
+Filter payment_status = 'COMPLETED'
+Filter transaction_amount > 0
+Filter promo_id IS NOT NULL
+Filter transaction_id IS NOT NULL
+Remove duplicates using transaction_id
+
+Promotions Rules
+
+Cast discount_pct to DECIMAL(5,2)
+Filter promo_id IS NOT NULL
+Filter channel IN ('Email','SMS','Push')
+Filter discount_pct BETWEEN 0 AND 100
+Remove duplicates using promo_id
+
+Quality Halt Threshold
+
+Abort if duplicate transaction_id > 5%
+Abort if invalid channel > 0%
+Abort if promo join success < 95%"	
+GOLD LAYER	[ Table name, key columns, EXACT business rule formula ]	
+→ Your answer	"Table Name: marketing_attribution
+
+Join Condition
+transactions.promo_id = promotions.promo_id
+
+Business Rules
+promo_cost = transaction_amount * (discount_pct / 100)
+
+revenue_per_channel = SUM(transaction_amount) GROUP BY channel
+
+promo_cost_per_channel = SUM(promo_cost) GROUP BY channel
+
+roi_per_channel = (revenue_per_channel - promo_cost_per_channel) / promo_cost_per_channel
+
+Final Columns
+
+channel
+revenue_per_channel
+promo_cost_per_channel
+roi_per_channel
+run_date"	
+ERROR HANDLING	[ What happens if source file missing? What if quality check fails? ]	
+→ Your answer	"If transactions source file missing → Raise FileNotFoundError, abort pipeline, send alert
+If promotions CSV missing → Raise FileNotFoundError, abort pipeline, send alert
+If schema mismatch → Abort pipeline immediately
+If join success < 95% → Move failed records to quarantine, process valid records only
+Log all rejected records"	
+PERFORMANCE	[ Partitioning strategy, any joins needing broadcast hint or caching ]	
+→ Your answer	"Partition transactions by transaction_date
+Use broadcast join for promotions CSV because promotions dataset is small
+Cache cleaned transactions before aggregation
+Store Gold output in Delta/Parquet format for optimized reads"	
+		

@@ -1,0 +1,102 @@
+{
+  "checkpoints": [
+    {
+      "id": 1,
+      "name": "IDEMPOTENCY",
+      "status": "PASS",
+      "finding": "All write operations use overwrite mode.",
+      "fix": "None needed."
+    },
+    {
+      "id": 2,
+      "name": "ERROR_HANDLING",
+      "status": "FAIL",
+      "finding": "No try/except blocks around pipeline stages.",
+      "fix": "Wrap each pipeline stage in try/except blocks."
+    },
+    {
+      "id": 3,
+      "name": "PARTITION_PRUNING",
+      "status": "PASS",
+      "finding": "Read operations are filtered by date/partition column.",
+      "fix": "None needed."
+    },
+    {
+      "id": 4,
+      "name": "ROW_COUNT_LOGGING",
+      "status": "WARN",
+      "finding": "No row count logging after each transformation stage.",
+      "fix": "Add logging statements to log row counts after each transformation."
+    },
+    {
+      "id": 5,
+      "name": "BUSINESS_RULES",
+      "status": "PASS",
+      "finding": "Revenue is calculated as SUM(amount) WHERE status='COMPLETED'.",
+      "fix": "None needed."
+    },
+    {
+      "id": 6,
+      "name": "NULL_HANDLING",
+      "status": "WARN",
+      "finding": "No NULL checks on primary key and critical columns.",
+      "fix": "Add NULL checks on primary key and critical columns."
+    },
+    {
+      "id": 7,
+      "name": "BROADCAST_HINT",
+      "status": "PASS",
+      "finding": "broadcast() is used on the merchant dimension join.",
+      "fix": "None needed."
+    },
+    {
+      "id": 8,
+      "name": "HARDCODED_PATHS",
+      "status": "PASS",
+      "finding": "File paths are passed as parameters, not hardcoded.",
+      "fix": "None needed."
+    },
+    {
+      "id": 9,
+      "name": "SCHEMA_VALIDATION",
+      "status": "WARN",
+      "finding": "No schema validation before transforming.",
+      "fix": "Add schema validation to check expected columns before transforming."
+    },
+    {
+      "id": 10,
+      "name": "DEDUPLICATION",
+      "status": "PASS",
+      "finding": "Explicit dedup logic on transaction_id is present.",
+      "fix": "None needed."
+    },
+    {
+      "id": 11,
+      "name": "METADATA_OUTPUT",
+      "status": "PASS",
+      "finding": "Pipeline writes a run summary JSON at the end.",
+      "fix": "None needed."
+    },
+    {
+      "id": 12,
+      "name": "IMPORTS",
+      "status": "PASS",
+      "finding": "All imports are present and specific.",
+      "fix": "None needed."
+    }
+  ],
+  "summary": {
+    "pass_count": 8,
+    "fail_count": 1,
+    "warn_count": 3,
+    "merge_recommendation": "APPROVE_WITH_CHANGES",
+    "top_3_fixes": [
+      "Wrap each pipeline stage in try/except blocks.",
+      "Add logging statements to log row counts after each transformation.",
+      "Add NULL checks on primary key and critical columns."
+    ]
+  },
+  "reviewed_file": "pipeline_brain/generated_pipeline.py",
+  "reviewed_at": "2026-05-26T11:51:06.910442+00:00",
+  "model": "amazon.nova-pro-v1:0"
+}

@@ -1,0 +1,29 @@
+CODE REVIEW NOTES — Day 7 Module 5
+
+Reviewer: Jignesh
+Pipeline: generated_pipeline.py
+
+Issues Found:
+1. No proper try/except blocks around Bronze, Silver, and Gold stages.
+2. S3 paths were hardcoded directly inside main().
+3. Deduplication logic used incorrect window function syntax.
+4. quality_flag logic was incorrect.
+5. DISTINCT count syntax was wrong in daily summary aggregation.
+
+Changes Made:
+1. Added try/except blocks with logging and raise statements.
+2. Replaced hardcoded paths with environment variables:
+   - INPUT_PATH
+   - BRONZE_PATH
+   - SILVER_PATH
+   - GOLD_PATH
+   - MERCHANTS_PATH
+3. Fixed deduplication using row_number window function.
+4. Added correct quality_flag logic using when/otherwise.
+5. Replaced count(distinct()) syntax with countDistinct().
+
+Final Decision:
+APPROVE_WITH_CHANGES
+
+Reason:
+Core pipeline structure was good, but production safety and correctness issues required fixes before deployment.
