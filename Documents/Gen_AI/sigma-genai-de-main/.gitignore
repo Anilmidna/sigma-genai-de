@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.env
+.env.local
+
+# API Keys and Credentials — NEVER COMMIT
+*secret*
+*credentials*
+*.pem
+*.key
+*.p8
+snowflake_config.json
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Large generated files
+*.pptx
+*.xlsx
+*.docx
+~$*
+
+# Temporary
+*.tmp
+.pytest_cache/
+*.log
+node_modules/
