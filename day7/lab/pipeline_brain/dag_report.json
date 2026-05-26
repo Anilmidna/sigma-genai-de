@@ -1,0 +1,14 @@
+{
+  "model": "amazon.nova-lite-v1:0",
+  "dag_id": "sigma_transaction_pipeline",
+  "schedule": "0 2 * * *",
+  "tasks_found": 3,
+  "has_dependencies": true,
+  "has_failure_callback": true,
+  "has_sla": true,
+  "tokens_in": 1259,
+  "tokens_out": 792,
+  "output_file": "pipeline_brain/sigma_dag.py",
+  "output_bytes": 2787,
+  "generated_at": "2026-05-26T09:23:47.631308+00:00"
+}

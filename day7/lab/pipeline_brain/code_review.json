@@ -1,0 +1,100 @@
+{
+  "checkpoints": [
+    {
+      "id": 1,
+      "name": "IDEMPOTENCY",
+      "status": "PASS",
+      "finding": "All write operations use overwrite mode.",
+      "fix": "None needed."
+    },
+    {
+      "id": 2,
+      "name": "ERROR_HANDLING",
+      "status": "PASS",
+      "finding": "Each pipeline stage is wrapped in try/except.",
+      "fix": "None needed."
+    },
+    {
+      "id": 3,
+      "name": "PARTITION_PRUNING",
+      "status": "PASS",
+      "finding": "Read operations are filtered by date/partition column.",
+      "fix": "None needed."
+    },
+    {
+      "id": 4,
+      "name": "ROW_COUNT_LOGGING",
+      "status": "PASS",
+      "finding": "Row count is logged after each transformation stage.",
+      "fix": "None needed."
+    },
+    {
+      "id": 5,
+      "name": "BUSINESS_RULES",
+      "status": "PASS",
+      "finding": "Revenue is calculated as SUM(amount) WHERE status='COMPLETED'.",
+      "fix": "None needed."
+    },
+    {
+      "id": 6,
+      "name": "NULL_HANDLING",
+      "status": "PASS",
+      "finding": "NULL checks are present on critical columns.",
+      "fix": "None needed."
+    },
+    {
+      "id": 7,
+      "name": "BROADCAST_HINT",
+      "status": "PASS",
+      "finding": "broadcast() is used on the merchant dimension join.",
+      "fix": "None needed."
+    },
+    {
+      "id": 8,
+      "name": "HARDCODED_PATHS",
+      "status": "PASS",
+      "finding": "File paths are passed as parameters, not hardcoded.",
+      "fix": "None needed."
+    },
+    {
+      "id": 9,
+      "name": "SCHEMA_VALIDATION",
+      "status": "WARN",
+      "finding": "No schema validation before transforming.",
+      "fix": "Add schema validation before transformations."
+    },
+    {
+      "id": 10,
+      "name": "DEDUPLICATION",
+      "status": "PASS",
+      "finding": "Explicit dedup logic on transaction_id is present.",
+      "fix": "None needed."
+    },
+    {
+      "id": 11,
+      "name": "METADATA_OUTPUT",
+      "status": "PASS",
+      "finding": "Pipeline writes a run summary JSON at the end.",
+      "fix": "None needed."
+    },
+    {
+      "id": 12,
+      "name": "IMPORTS",
+      "status": "PASS",
+      "finding": "All imports are present and specific.",
+      "fix": "None needed."
+    }
+  ],
+  "summary": {
+    "pass_count": 11,
+    "fail_count": 0,
+    "warn_count": 1,
+    "merge_recommendation": "APPROVE_WITH_CHANGES",
+    "top_3_fixes": [
+      "Add schema validation before transformations."
+    ]
+  },
+  "reviewed_file": "pipeline_brain/generated_pipeline.py",
+  "reviewed_at": "2026-05-26T11:49:52.349023+00:00",
+  "model": "amazon.nova-pro-v1:0"
+}

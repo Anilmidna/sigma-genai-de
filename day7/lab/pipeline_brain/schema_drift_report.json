@@ -1,0 +1,60 @@
+{
+  "simulation": {
+    "drifted_columns_injected": {
+      "payment_gateway": "string",
+      "discount_amount": "float"
+    },
+    "description": "payment_gateway and discount_amount appeared in upstream CSV"
+  },
+  "original_schema": {
+    "transaction_id": "string",
+    "amount": "string",
+    "status": "string",
+    "merchant_id": "string",
+    "customer_id": "string",
+    "transaction_date": "string",
+    "payment_method": "string",
+    "ingestion_timestamp": "string",
+    "source_file": "string",
+    "pipeline_run_id": "string"
+  },
+  "drifted_schema": {
+    "transaction_id": "string",
+    "amount": "string",
+    "status": "string",
+    "merchant_id": "string",
+    "customer_id": "string",
+    "transaction_date": "string",
+    "payment_method": "string",
+    "ingestion_timestamp": "string",
+    "source_file": "string",
+    "pipeline_run_id": "string",
+    "payment_gateway": "string",
+    "discount_amount": "float"
+  },
+  "new_columns_detected": [
+    "discount_amount",
+    "payment_gateway"
+  ],
+  "removed_columns_detected": [],
+  "type_changes_detected": {},
+  "action_taken": "AI-generated schema evolution handler \u2014 see schema_evolution_handler.py",
+  "updated_schema": {
+    "transaction_id": "string",
+    "amount": "string",
+    "status": "string",
+    "merchant_id": "string",
+    "customer_id": "string",
+    "transaction_date": "string",
+    "payment_method": "string",
+    "ingestion_timestamp": "string",
+    "source_file": "string",
+    "pipeline_run_id": "string",
+    "payment_gateway": "string",
+    "discount_amount": "float"
+  },
+  "model_used": "amazon.nova-lite-v1:0",
+  "tokens_in": 848,
+  "tokens_out": 1095,
+  "generated_at": "2026-05-26T10:29:32.835193+00:00"
+}
