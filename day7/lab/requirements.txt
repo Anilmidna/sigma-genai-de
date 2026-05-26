@@ -1,0 +1,3 @@
+boto3>=1.34.0
+apache-airflow>=2.8.0  # for DAG syntax validation only
+pyspark>=3.5.0         # for code reference -- not required to run labs

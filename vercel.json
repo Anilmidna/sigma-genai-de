@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/submissions.py", "use": "@vercel/python" },
+    { "src": "api/debug.py", "use": "@vercel/python" },
+    { "src": "dashboard/index.html", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/submissions", "dest": "/api/submissions.py" },
+    { "src": "/api/debug", "dest": "/api/debug.py" },
+    { "src": "/(.*)", "dest": "/dashboard/index.html" }
+  ]
+}
