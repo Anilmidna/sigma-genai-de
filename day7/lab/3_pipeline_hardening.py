@@ -166,7 +166,7 @@ Add ALL FIVE of these improvements:
 
 4. ROW COUNT LOGGING AT EACH STAGE
    - After each major transformation, call df.count() and log the result
-   - Log format: "[Stage: {stage_name}] {label}: {count:,} rows"
+   - Log format: "[Stage: {{stage_name}}] {{label}}: {{count:,}} rows"
    - Track these counts: input_count, after_filter_count, after_dedup_count, output_count
 
 5. RUN METADATA JSON

@@ -6,6 +6,22 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
 
+# For days that have a "master" tier, list the core files required for "complete"
+# and the extra files required for "master". Other days have no master tier.
+MASTER_TIER = {
+    7: {
+        "core": [
+            "pipeline_brain/generated_pipeline.py",
+            "pipeline_brain/sigma_dag.py",
+            "pipeline_brain/hardened_pipeline.py",
+        ],
+        "extra": [
+            "pipeline_brain/schema_drift_report.json",
+            "pipeline_brain/code_review.json",
+        ],
+    }
+}
+
 EXPECTED_FILES = {
     6: {
         "review_report.json": "SQL Review",
@@ -16,7 +32,13 @@ EXPECTED_FILES = {
         "pipeline_brain/generated_pipeline.py": "Pipeline",
         "pipeline_brain/sigma_dag.py": "DAG",
         "pipeline_brain/hardened_pipeline.py": "Hardened",
+        "pipeline_brain/schema_drift_report.json": "SchemaDrift",
         "pipeline_brain/code_review.json": "Review",
+    },
+    8: {
+        "devops_brain/test_pipeline.py": "pytest",
+        "devops_brain/soda_report.json": "Soda",
+        "devops_brain/ship_report.json": "Ship",
     },
 }
 
@@ -79,16 +101,30 @@ def check_file_exists(fork_owner, fork_repo, file_path, token):
     return status == 200
 
 
-def compute_status(files_found):
+def compute_status(files_found, day_num=None):
     """Convert a dict of {filename: bool} to a status string."""
     if not files_found:
         return "missing"
     values = list(files_found.values())
+    if not any(values):
+        return "missing"
+
+    # Check master tier first (all 5 files present)
+    if day_num in MASTER_TIER:
+        tier = MASTER_TIER[day_num]
+        core_done  = all(files_found.get(f, False) for f in tier["core"])
+        extra_done = all(files_found.get(f, False) for f in tier["extra"])
+        if core_done and extra_done:
+            return "master"
+        if core_done:
+            return "complete"
+        if any(values):
+            return "partial"
+        return "missing"
+
     if all(values):
         return "complete"
-    if any(values):
-        return "partial"
-    return "missing"
+    return "partial"
 
 
 def ist_now():
@@ -154,14 +190,14 @@ def build_response():
                 files_found[rel_path] = exists
 
             student_entry[f'day{day_num}'] = {
-                "status": compute_status(files_found),
+                "status": compute_status(files_found, day_num),
                 "files": files_found,
             }
 
         students_data.append(student_entry)
 
     # Sort: complete first, then partial, then missing; ties broken by name
-    rank = {"complete": 0, "partial": 1, "missing": 2}
+    rank = {"master": 0, "complete": 1, "partial": 2, "missing": 3}
 
     def sort_key(s):
         total_complete = sum(

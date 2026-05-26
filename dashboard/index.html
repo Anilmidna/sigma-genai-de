@@ -245,6 +245,13 @@
     border: 2px solid rgba(239,68,68,0.35);
   }
 
+  .status-master {
+    background: rgba(251,191,36,0.18);
+    color: #FBB924;
+    border: 2px solid rgba(251,191,36,0.7);
+    font-size: 18px;
+  }
+
   /* ── Tooltip ── */
   .tooltip {
     visibility: hidden;
@@ -405,8 +412,8 @@
   var lastRefLabel = document.getElementById('last-refreshed');
 
   /* ── Status helpers ── */
-  var STATUS_ICON  = { complete: '&#10003;', partial: '&#126;', missing: '&#10007;' };
-  var STATUS_CLASS = { complete: 'status-complete', partial: 'status-partial', missing: 'status-missing' };
+  var STATUS_ICON  = { master: '&#128081;', complete: '&#10003;', partial: '&#126;', missing: '&#10007;' };
+  var STATUS_CLASS = { master: 'status-master', complete: 'status-complete', partial: 'status-partial', missing: 'status-missing' };
 
   function esc(str) {
     return String(str)
@@ -423,6 +430,9 @@
     var html = '';
     days.forEach(function (d) {
       var key = 'day' + d;
+      var master = students.filter(function (s) {
+        return (s[key] || {}).status === 'master';
+      }).length;
       var complete = students.filter(function (s) {
         return (s[key] || {}).status === 'complete';
       }).length;
@@ -430,9 +440,10 @@
         return (s[key] || {}).status === 'partial';
       }).length;
       html += '<div class="summary-chip">' +
-        '<strong>' + complete + ' / ' + students.length + '</strong>' +
+        '<strong>' + (complete + master) + ' / ' + students.length + '</strong>' +
         'Day ' + d + ' complete' +
-        (partial ? ' <span style="color:var(--yellow)">(' + partial + ' partial)</span>' : '') +
+        (master   ? ' <span style="color:#FBB924">&#128081; ' + master + ' masters</span>' : '') +
+        (partial  ? ' <span style="color:var(--yellow)">(' + partial + ' partial)</span>' : '') +
         '</div>';
     });
     summaryBar.innerHTML = html;

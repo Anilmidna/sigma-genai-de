@@ -53,35 +53,37 @@ REVIEW_PROMPT = """You are a senior Data Engineer reviewing AI-generated PySpark
 
 Review this code against exactly these 12 checkpoints. For each, return: status (PASS/FAIL/WARN), finding (what you found), fix (what to change).
 
+CRITICAL INSTRUCTION: For every checkpoint, you MUST quote a specific line or lines from the code as evidence before assigning a status. If you cannot find a specific line that proves a violation, you MUST assign PASS — do NOT infer or assume a problem exists.
+
 CHECKPOINTS:
-1. IDEMPOTENCY: Does every write operation use overwrite mode or delete-partition-first? (FAIL if append mode found)
-2. ERROR_HANDLING: Is there try/except around each pipeline stage? (FAIL if bare code with no exception handling)
-3. PARTITION_PRUNING: Are read operations filtered by date/partition column? (WARN if full table scans present)
-4. ROW_COUNT_LOGGING: Is row count logged after each transformation stage? (WARN if no logging)
-5. BUSINESS_RULES: Is revenue calculated as SUM(amount) WHERE status='COMPLETED' only? (FAIL if all statuses included)
-6. NULL_HANDLING: Are NULL checks present on primary key and critical columns? (WARN if missing)
-7. BROADCAST_HINT: Is broadcast() used on the merchant dimension join (small table)? (WARN if missing)
-8. HARDCODED_PATHS: Are file paths hardcoded as strings instead of parameters? (FAIL if hardcoded)
-9. SCHEMA_VALIDATION: Is there any check that expected columns exist before transforming? (WARN if missing)
-10. DEDUPLICATION: Is there explicit dedup logic on transaction_id? (FAIL if missing for Silver layer)
-11. METADATA_OUTPUT: Does the pipeline write a run summary JSON at the end? (WARN if missing)
-12. IMPORTS: Are all imports present and specific (not import *)? (FAIL if wildcard imports found)
+1. IDEMPOTENCY: Look for .write.mode("append") or .insertInto() without overwrite. FAIL only if you can quote a specific line using append mode. If writes use "overwrite" or there are no writes, PASS.
+2. ERROR_HANDLING: Look for try/except blocks around pipeline stages. FAIL only if you can confirm bare function calls with no surrounding try/except. If try/except exists anywhere in the pipeline logic, PASS.
+3. PARTITION_PRUNING: Look for .filter() or .where() on a date/partition column before a read or join. WARN only if you can quote a specific full-table read with no filter. If filters are present, PASS.
+4. ROW_COUNT_LOGGING: Look for .count() or logging statements after transformations. WARN only if no count/logging calls are present anywhere in the code.
+5. BUSINESS_RULES: Look for revenue/amount aggregation. FAIL only if you can quote a specific line that aggregates amount WITHOUT filtering by status='COMPLETED'.
+6. NULL_HANDLING: Look for .isNull(), .dropna(), .fillna(), or .filter(col.isNotNull()). WARN only if none of these appear anywhere in the code.
+7. BROADCAST_HINT: Look for broadcast() on join operations. WARN only if a join is present and broadcast() is not used on any join argument.
+8. HARDCODED_PATHS: Look for string literals used directly as file paths (e.g. "/data/raw/file.csv" passed directly to read/write). FAIL only if you can quote a specific hardcoded path string. If paths come from config dicts, variables, os.path, argparse, or environment variables, PASS.
+9. SCHEMA_VALIDATION: Look for column existence checks (e.g. checking df.columns, StructType validation). WARN only if transformations happen with no prior schema check.
+10. DEDUPLICATION: Look for .dropDuplicates(), .distinct(), or window-based dedup on transaction_id. FAIL only if Silver layer writes exist with no dedup logic anywhere in the pipeline.
+11. METADATA_OUTPUT: Look for json.dump, to_json(), or writing a summary/metadata dict to a file. WARN only if no such output exists.
+12. IMPORTS: Look for "import *" or "from module import *". FAIL only if you can quote a specific wildcard import line.
 
 Return ONLY this JSON structure, no markdown:
 {
   "checkpoints": [
-    {"id": 1, "name": "IDEMPOTENCY", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 2, "name": "ERROR_HANDLING", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 3, "name": "PARTITION_PRUNING", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 4, "name": "ROW_COUNT_LOGGING", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 5, "name": "BUSINESS_RULES", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 6, "name": "NULL_HANDLING", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 7, "name": "BROADCAST_HINT", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 8, "name": "HARDCODED_PATHS", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 9, "name": "SCHEMA_VALIDATION", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 10, "name": "DEDUPLICATION", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 11, "name": "METADATA_OUTPUT", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."},
-    {"id": 12, "name": "IMPORTS", "status": "PASS|FAIL|WARN", "finding": "...", "fix": "..."}
+    {"id": 1, "name": "IDEMPOTENCY", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 2, "name": "ERROR_HANDLING", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 3, "name": "PARTITION_PRUNING", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 4, "name": "ROW_COUNT_LOGGING", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 5, "name": "BUSINESS_RULES", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 6, "name": "NULL_HANDLING", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 7, "name": "BROADCAST_HINT", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 8, "name": "HARDCODED_PATHS", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 9, "name": "SCHEMA_VALIDATION", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 10, "name": "DEDUPLICATION", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 11, "name": "METADATA_OUTPUT", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."},
+    {"id": 12, "name": "IMPORTS", "status": "PASS|FAIL|WARN", "evidence": "quote the specific line(s) or 'No violation found'", "finding": "...", "fix": "..."}
   ],
   "summary": {
     "pass_count": 0,
@@ -146,7 +148,10 @@ def print_results(review: dict) -> None:
         name = cp.get("name", "").ljust(22)
         finding = cp.get("finding", "")
         cp_id = str(cp.get("id", "?")).rjust(2)
+        evidence = cp.get("evidence", "")
         print(f"  {color}{icon}{RESET} {cp_id}. {name} — {finding}")
+        if evidence and evidence != "No violation found":
+            print(f"         Evidence: {evidence}")
 
     print(f"\n{'=' * 65}")
     rec = summary.get("merge_recommendation", "UNKNOWN")
