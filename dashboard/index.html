@@ -507,7 +507,8 @@
     days.forEach(function (d) {
       var key = 'day' + d;
       var complete = students.filter(function (s) {
-        return (s[key] || {}).status === 'complete';
+        var st = (s[key] || {}).status;
+        return st === 'complete' || st === 'master';
       }).length;
       footHtml += '<td><span class="count-badge">' + complete + ' / ' + students.length + '</span></td>';
     });
