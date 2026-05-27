@@ -36,9 +36,12 @@ EXPECTED_FILES = {
         "pipeline_brain/code_review.json": "Review",
     },
     8: {
-        "devops_brain/test_pipeline.py": "pytest",
-        "devops_brain/soda_report.json": "Soda",
-        "devops_brain/ship_report.json": "Ship",
+        "devops_brain/code_review_report.json":    "Review",
+        "devops_brain/doc_report.json":            "Docs",
+        "devops_brain/testing_report.json":        "Tests",
+        "devops_brain/ci_slo_report.json":         "CI/SLO",
+        "devops_brain/observability_report.json":  "Observe",
+        "devops_brain/competitive/scorecard.json": "Ship",
     },
 }
 
