@@ -36,9 +36,12 @@ EXPECTED_FILES = {
         "pipeline_brain/code_review.json": "Review",
     },
     8: {
-        "devops_brain/test_pipeline.py": "pytest",
-        "devops_brain/soda_report.json": "Soda",
-        "devops_brain/ship_report.json": "Ship",
+        "devops_brain/code_review_report.json":    "Review",
+        "devops_brain/doc_report.json":            "Docs",
+        "devops_brain/testing_report.json":        "Tests",
+        "devops_brain/ci_slo_report.json":         "CI/SLO",
+        "devops_brain/observability_report.json":  "Observe",
+        "devops_brain/competitive/scorecard.json": "Ship",
     },
 }
 
@@ -94,11 +97,14 @@ def get_all_forks(owner, repo, token):
     return forks
 
 
-def check_file_exists(fork_owner, fork_repo, file_path, token):
-    """Return True if the file exists in the fork (HTTP 200), False otherwise."""
-    url = f'https://api.github.com/repos/{fork_owner}/{fork_repo}/contents/{file_path}'
-    status, _ = github_get(url, token)
-    return status == 200
+def get_fork_file_tree(fork_owner, fork_repo, token):
+    """Fetch all file paths in the fork's default branch in one API call.
+    Returns a set of lowercase paths, or None if the call failed."""
+    url = f'https://api.github.com/repos/{fork_owner}/{fork_repo}/git/trees/HEAD?recursive=1'
+    status, body = github_get(url, token)
+    if status != 200 or not body or 'tree' not in body:
+        return None
+    return {item['path'].lower() for item in body['tree'] if item.get('type') == 'blob'}
 
 
 def compute_status(files_found, day_num=None):
@@ -176,6 +182,9 @@ def build_response():
         canonical = known_usernames_lower.get(fork_owner.lower(), fork_owner)
         real_name = name_map.get(canonical, fork_owner)
 
+        # One API call gets ALL files in the fork — replaces N*files individual calls
+        tree = get_fork_file_tree(fork_owner, fork_repo, token)
+
         student_entry = {
             "github": fork_owner,
             "real_name": real_name,
@@ -185,8 +194,11 @@ def build_response():
             file_specs = EXPECTED_FILES[day_num]
             files_found = {}
             for rel_path, label in file_specs.items():
-                full_path = f'day{day_num}/lab/{rel_path}'
-                exists = check_file_exists(fork_owner, fork_repo, full_path, token)
+                full_path = f'day{day_num}/lab/{rel_path}'.lower()
+                if tree is None:
+                    exists = False
+                else:
+                    exists = full_path in tree
                 files_found[rel_path] = exists
 
             student_entry[f'day{day_num}'] = {
