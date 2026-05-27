@@ -1,0 +1,29 @@
+DATA QUALITY FALLBACK REPORT (pandas checks)
+==================================================
+
+Silver rows:       14
+Silver columns:    12
+Amount range:      65.0 - 3400.0
+Amount mean:       1002.86
+
+Null rates:
+  transaction_id                 0.0%
+  amount                         0.0%
+  status                         0.0%
+  merchant_id                    0.0%
+  customer_id                    0.0%
+  transaction_date               0.0%
+  payment_method                 0.0%
+  merchant_name                  0.0%
+  category                       0.0%
+  city                           0.0%
+  quality_flag                   0.0%
+  ingestion_timestamp            0.0%
+
+Status distribution:
+  COMPLETED       11
+  FAILED          2
+  PENDING         1
+
+Columns with value drift (Bronze vs Silver):
+  None detected

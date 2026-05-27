@@ -8,8 +8,7 @@ Issues Found:
 2. S3 paths were hardcoded directly inside main().
 3. Deduplication logic used incorrect window function syntax.
 4. quality_flag logic was incorrect.
-5. DISTINCT count syntax was wrong in daily summary aggregation.
-
+5. DISTINCT count syntax was wrong in daily summary aggrega
 Changes Made:
 1. Added try/except blocks with logging and raise statements.
 2. Replaced hardcoded paths with environment variables:

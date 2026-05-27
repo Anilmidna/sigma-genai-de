@@ -1,0 +1,6 @@
+{
+  "sprint": "Sprint 1 — Root Cause Analysis",
+  "model": "amazon.nova-lite-v1:0",
+  "stack_trace": "Traceback (most recent call last):\n  File \"buggy_pipeline.py\", line 134, in load_silver\n    con.execute(\"INSERT INTO silver_transactions VALUES (?, ?, ?, ?, ?)\",\n                [row[\"transaction_id\"], row[\"amount\"], row[\"status\"], row[\"merchant_id\"]])\nduckdb.duckdb.ConstraintException: Constraint Error: Duplicate key \"TXN001\" violates primary key constraint!\n  File \"buggy_pipeline.py\", line 89, in main\n    load_silver(silver_rows)\n  File \"buggy_pipeline.py\", line 156, in run_pipeline\n    main()\nRuntimeError: Pipeline failed at Silver load stage after processing 14 records",
+  "rca": "**ROOT CAUSE:**\nThe pipeline failed because it attempted to insert a record into the `silver_transactions` table with a primary key that already exists, causing a constraint violation. This indicates that the data being processed contains duplicate transaction IDs.\n\n**IMMEDIATE FIX:**\nModify the `load_silver` function to check for duplicate transaction IDs before attempting to insert them into the database. If a duplicate is found, skip the insertion or handle it appropriately.\n\n**PREVENTION:**\nImplement a unit test that checks for duplicate primary keys in the dataset before the pipeline runs."
+}

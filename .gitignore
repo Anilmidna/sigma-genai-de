@@ -10,6 +10,8 @@ env/
 # API Keys and Credentials — NEVER COMMIT
 *secret*
 *credentials*
+aws_configure.cfg
+aws_*.cfg
 *.pem
 *.key
 *.p8

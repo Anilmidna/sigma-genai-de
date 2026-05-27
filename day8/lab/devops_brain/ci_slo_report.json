@@ -1,0 +1,37 @@
+{
+  "sprint": "ci_slo",
+  "generated_at": "2026-05-27T18:47:11.339693",
+  "models_used": {
+    "workflow_generation": "amazon.nova-pro-v1:0",
+    "slo_generation": "amazon.nova-pro-v1:0",
+    "alert_generation": "amazon.nova-lite-v1:0"
+  },
+  "token_usage": {
+    "ci_workflow": {
+      "input": 469,
+      "output": 465
+    },
+    "slo_definitions": {
+      "input": 473,
+      "output": 285
+    },
+    "alert_rules": {
+      "input": 543,
+      "output": 750
+    }
+  },
+  "files_generated": [
+    "devops_brain/pipeline_ci.yml",
+    "devops_brain/slo_definitions.json",
+    "devops_brain/alert_rules.json",
+    "devops_brain/ci_slo_report.json"
+  ],
+  "ci_workflow_lines": 57,
+  "slo_count": 4,
+  "alert_count": {
+    "CRITICAL": 3,
+    "WARNING": 3,
+    "INFO": 2
+  },
+  "student_judgment": "I would tighten it to 4 hours because financial stakeholders need same-day anomaly visibility and a 24-hour freshness window is too lax for incident response."
+}

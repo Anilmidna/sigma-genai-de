@@ -1,0 +1,113 @@
+{
+  "expectation_suite_name": "silver_transactions_suite",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 10,
+        "max_value": 30
+      },
+      "meta": {
+        "notes": "Ensure the number of rows in the table is within the expected range after the Bronze -> Silver transformation."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "transaction_id"
+      },
+      "meta": {
+        "notes": "Ensure transaction_id is not null."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "amount"
+      },
+      "meta": {
+        "notes": "Ensure amount is not null."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "status"
+      },
+      "meta": {
+        "notes": "Ensure status is not null."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "transaction_date"
+      },
+      "meta": {
+        "notes": "Ensure transaction_date is not null."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "amount",
+        "min_value": 0
+      },
+      "meta": {
+        "notes": "Ensure all amounts are greater than or equal to 0."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {
+        "column": "transaction_id"
+      },
+      "meta": {
+        "notes": "Ensure there are no duplicate transaction_ids."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "status",
+        "value_set": [
+          "COMPLETED",
+          "FAILED",
+          "PENDING"
+        ]
+      },
+      "meta": {
+        "notes": "Ensure status is one of the allowed values: COMPLETED, FAILED, PENDING."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "quality_flag",
+        "value_set": [
+          "CLEAN",
+          "UNMATCHED"
+        ]
+      },
+      "meta": {
+        "notes": "Ensure quality_flag is either CLEAN or UNMATCHED."
+      }
+    },
+    {
+      "expectation_type": "expect_column_mean_to_be_between",
+      "kwargs": {
+        "column": "amount",
+        "min_value": 100,
+        "max_value": 5000
+      },
+      "meta": {
+        "notes": "Ensure the mean of the amount column is between 100 and 5000."
+      }
+    }
+  ],
+  "meta": {
+    "great_expectations_version": "0.18.x",
+    "generated_by": "Nova Lite",
+    "pipeline": "Sigma DataTech Bronze -> Silver"
+  }
+}
