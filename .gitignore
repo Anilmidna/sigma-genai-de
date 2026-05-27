@@ -24,6 +24,10 @@ snowflake_config.json
 Thumbs.db
 desktop.ini
 
+# DuckDB — generated locally by 0_setup_duckdb.py
+*.duckdb
+*.duckdb.wal
+
 # Large generated files
 *.pptx
 *.xlsx
