@@ -1,0 +1,28 @@
+{
+  "slo_context": {
+    "purpose": "To ensure the reliability and timeliness of financial data for accurate reporting.",
+    "review_cadence": "Quarterly",
+    "owner": "DataOps Team"
+  },
+  "data_freshness_slo": {
+    "threshold_hours": 24,
+    "reasoning": "To ensure data is up-to-date for the morning dashboard.",
+    "breach_impact": "Stale data leads to incorrect financial reports for merchants."
+  },
+  "quality_threshold_slo": {
+    "threshold_pct": 99.9,
+    "reasoning": "To maintain high data quality for accurate financial analysis.",
+    "breach_impact": "Poor data quality results in erroneous financial insights."
+  },
+  "row_count_slo": {
+    "min_rows": 17,
+    "max_rows": 25,
+    "buffer_pct": 20.0,
+    "reasoning": "To account for variability in daily transaction volumes."
+  },
+  "pipeline_runtime_slo": {
+    "threshold_minutes": 120,
+    "reasoning": "To allow sufficient time for data processing before the morning dashboard cutoff.",
+    "breach_impact": "Exceeding runtime delays data availability for the analytics team."
+  }
+}
