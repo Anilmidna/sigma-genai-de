@@ -1,0 +1,90 @@
+{
+  "sprint": "testing_sprint",
+  "generated_at": "2026-05-27T09:58:46.038150+00:00",
+  "models_used": {
+    "pytest_suite": "amazon.nova-pro-v1:0",
+    "ge_suite": "amazon.nova-lite-v1:0"
+  },
+  "token_usage": {
+    "step1_pytest": {
+      "input": 1830,
+      "output": 1048
+    },
+    "step2_ge": {
+      "input": 586,
+      "output": 776
+    },
+    "total_input": 2416,
+    "total_output": 1824
+  },
+  "pytest": {
+    "file": "devops_brain/test_pipeline.py",
+    "tests_generated": 9,
+    "passed": 0,
+    "failed": 0,
+    "errors": 2,
+    "all_green": false
+  },
+  "great_expectations": {
+    "file": "devops_brain/ge_expectations.json",
+    "json_valid": true,
+    "duckdb_checks": {
+      "checks": [
+        {
+          "check": "row_count between 10 and 30",
+          "value": "18",
+          "status": "PASS"
+        },
+        {
+          "check": "no null transaction_id",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "no null amount",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "no null status",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "no null transaction_date",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "amount >= 0",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "transaction_id unique",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "status values valid",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "quality_flag values valid",
+          "value": "0",
+          "status": "PASS"
+        },
+        {
+          "check": "mean amount between 100 and 5000",
+          "value": "6350.56",
+          "status": "FAIL"
+        }
+      ],
+      "passed": 9,
+      "failed": 1,
+      "total": 10
+    }
+  },
+  "student_judgment": "This is a TEST bug; I would move the sys.path.insert lines to the very top of test_pipeline.py, before the sample_data import, so tthat Python updates its search path before resolving imports"
+}

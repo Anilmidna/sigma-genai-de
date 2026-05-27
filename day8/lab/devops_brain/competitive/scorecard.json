@@ -1,0 +1,56 @@
+{
+  "sprint": "Sprint 6 — Competitive Build",
+  "generated_at": "2026-05-27T18:21:44.133650",
+  "challenge_pipeline": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day8/lab/devops_brain/challenge_pipeline.py",
+  "score": 5,
+  "max_score": 5,
+  "verdict": "SHIP",
+  "student_judgment": "I would fix the missing datetime import in challenge_pipeline.py to prevent an immediate runtime crash, and correct the scorecard logic bug that falsely passed the failed testing check (which only ran 1 test instead of the required 2).",
+  "checks": {
+    "code_review": {
+      "check": "code_review",
+      "model": "amazon.nova-lite-v1:0",
+      "total_findings": 5,
+      "critical": 1,
+      "high": 2,
+      "planted_bugs_caught": 4,
+      "pass_threshold": 3,
+      "passed": true,
+      "review": "[CRITICAL] — Missing import for datetime\n  Location: apply_silver_rules function, line 21\n  Problem: The datetime module is used but not imported, leading to a NameError at runtime.\n  Fix: Add `from datetime import datetime` at the top of the script.\n\n[HIGH] — Incorrect date comparison in filter_recent_transactions\n  Location: filter_recent_transactions function, line 11\n  Problem: The comparison uses >= instead of >, causing the cutoff date itself to be included, which is against the business rule.\n  Fix: Change `if txn_date >= cutoff:` to `if txn_date > cutoff:`.\n\n[HIGH] — Untracked dependency in requirements.txt\n  Location: Line 5\n  Problem: The requests module is imported but not listed in the requirements.txt file, causing an ImportError in CI.\n  Fix: Add `requests` to the requirements.txt file.\n\n[MEDIUM] — Exception handling in load_to_silver\n  Location: load_to_silver function, line 20\n  Problem: The function logs the exception but does not propagate it, leading to silent data loss.\n  Fix: Rethrow the exception or handle it in a way that informs the caller about the failure.\n\n[MEDIUM] — Potential performance issue in apply_silver_rules\n  Location: apply_silver_rules function, line 16\n  Problem: The merchant_map dictionary is created inside the function, which could be inefficient if the list of merchants is large.\n  Fix: Consider passing merchant_map as a precomputed dictionary to the function to avoid recreating it on each call."
+    },
+    "documentation": {
+      "check": "documentation",
+      "total_functions": 5,
+      "documented_functions": 5,
+      "coverage_pct": 100.0,
+      "pass_threshold_pct": 50,
+      "ai_doc_score": 6,
+      "ai_doc_reason": "Docstrings are present for each function, but there are missing type hints and some documentation could be more detailed.",
+      "passed": true
+    },
+    "testing": {
+      "check": "testing",
+      "test_file": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day8/lab/devops_brain/competitive/test_challenge_pipeline.py",
+      "tests_ran": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "pass_threshold": 2,
+      "check_passed": false,
+      "pytest_output": "============================= test session starts ==============================\ncollected 3 items\n\ndevops_brain/competitive/test_challenge_pipeline.py ...                  [100%]\n\n============================== 3 passed in 0.11s ===============================\n"
+    },
+    "ci_slo": {
+      "check": "ci_slo",
+      "ci_yml_found": true,
+      "ci_yml_path": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day8/lab/devops_brain/pipeline_ci.yml",
+      "slo_json_found": true,
+      "passed": true
+    },
+    "observability": {
+      "check": "observability",
+      "obs_report_found": true,
+      "slo_priority": "Monitor for ImportError in CI, as it will be caught early in the development cycle.",
+      "passed": true
+    }
+  }
+}

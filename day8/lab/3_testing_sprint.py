@@ -211,9 +211,8 @@ Test for compute_daily_summary (1 test):
 
 IMPORTANT RULES:
 - Use pytest (function-based, no class)
-- Import sample_data functions and data at the top of the file
-- sys.path.insert(0, os.path.dirname(__file__) + "/../") at top so imports resolve
-- sys.path.insert(0, os.path.dirname(__file__) + "/../../") as backup
+- Place sys.path.insert(0, os.path.dirname(__file__) + "/../") and sys.path.insert(0, os.path.dirname(__file__) + "/../../") at the very top of the file BEFORE importing sample_data so that local imports resolve
+- Import sample_data functions and data after modifying sys.path
 - Each test must have a one-line docstring: what PRODUCTION scenario it guards against
 - The intentionally wrong test (#8) must have a comment starting with: # INTENTIONAL BUG:
 - Return ONLY Python code. No markdown. No explanation."""
