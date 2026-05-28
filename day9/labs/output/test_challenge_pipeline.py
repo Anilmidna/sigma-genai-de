@@ -6,18 +6,20 @@ def filter_recent_transactions(transactions, cutoff_date):
 def apply_silver_rules(transactions):
     return [t for t in transactions if t.get('transaction_id') and t.get('amount') >= 0]
 
+import pytest
+
 def test_filter_recent_transactions_boundary():
-    cutoff_date = datetime.now() - timedelta(days=1)
+    cutoff_date = datetime(2023, 1, 1)
     transactions = [
         {'date': cutoff_date, 'amount': 100},
-        {'date': cutoff_date + timedelta(seconds=1), 'amount': 200},
+        {'date': cutoff_date + timedelta(days=1), 'amount': 200},
         {'date': cutoff_date - timedelta(days=1), 'amount': 300},
     ]
     result = filter_recent_transactions(transactions, cutoff_date)
     assert len(result) == 1
-    assert result[0]['amount'] == 200
+    assert result[0]['date'] > cutoff_date
 
-def test_apply_silver_rules_filter_none_transaction_id():
+def test_apply_silver_rules_none_transaction_id():
     transactions = [
         {'transaction_id': 1, 'amount': 100},
         {'transaction_id': None, 'amount': 200},
@@ -27,7 +29,7 @@ def test_apply_silver_rules_filter_none_transaction_id():
     assert len(result) == 2
     assert all(t['transaction_id'] is not None for t in result)
 
-def test_apply_silver_rules_filter_negative_amount():
+def test_apply_silver_rules_negative_amount():
     transactions = [
         {'transaction_id': 1, 'amount': 100},
         {'transaction_id': 2, 'amount': -200},

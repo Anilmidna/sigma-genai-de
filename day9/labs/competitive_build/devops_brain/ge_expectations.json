@@ -8,7 +8,7 @@
         "max_value": 30
       },
       "meta": {
-        "notes": "After Bronze -> Silver transform, we expect 18-22 rows"
+        "notes": "Ensure the number of rows is within the expected range after transformation."
       }
     },
     {
@@ -17,7 +17,7 @@
         "column": "transaction_id"
       },
       "meta": {
-        "notes": "All transaction_ids must be non-null (nulls were filtered in Bronze)"
+        "notes": "Transaction ID should not be null after filtering in Bronze."
       }
     },
     {
@@ -26,7 +26,7 @@
         "column": "amount"
       },
       "meta": {
-        "notes": "All amounts must be >= 0 (negatives were filtered in Bronze)"
+        "notes": "Amount should not be null after filtering in Bronze."
       }
     },
     {
@@ -35,7 +35,7 @@
         "column": "status"
       },
       "meta": {
-        "notes": "Status must not be null"
+        "notes": "Status should not be null after transformation."
       }
     },
     {
@@ -44,7 +44,7 @@
         "column": "transaction_date"
       },
       "meta": {
-        "notes": "Transaction date must not be null"
+        "notes": "Transaction date should not be null after transformation."
       }
     },
     {
@@ -54,7 +54,7 @@
         "min_value": 0
       },
       "meta": {
-        "notes": "Amount must be >= 0"
+        "notes": "Amount should be greater than or equal to 0 after filtering in Bronze."
       }
     },
     {
@@ -63,7 +63,7 @@
         "column": "transaction_id"
       },
       "meta": {
-        "notes": "No duplicate transaction_ids should exist in silver"
+        "notes": "Transaction IDs should be unique."
       }
     },
     {
@@ -73,7 +73,7 @@
         "value_set": ["COMPLETED", "FAILED", "PENDING"]
       },
       "meta": {
-        "notes": "Status must be one of COMPLETED, FAILED, PENDING"
+        "notes": "Status should be one of the allowed values."
       }
     },
     {
@@ -83,7 +83,7 @@
         "value_set": ["CLEAN", "UNMATCHED"]
       },
       "meta": {
-        "notes": "Quality flag must be either CLEAN or UNMATCHED"
+        "notes": "Quality flag should be either CLEAN or UNMATCHED."
       }
     },
     {
@@ -94,7 +94,7 @@
         "max_value": 5000
       },
       "meta": {
-        "notes": "The mean of the amount column should be between 100 and 5000"
+        "notes": "The mean of the amounts should be between 100 and 5000."
       }
     }
   ],

@@ -1,34 +1,44 @@
 # Pipeline Design Document
 
 ## What This Pipeline Does
-
-This pipeline ingests transaction data from both clean and dirty sources, enriches it with merchant details, and processes it into three layers: Bronze, Silver, and Gold. The Bronze layer stores raw transactions, the Silver layer stores enriched transactions, and the Gold layer stores aggregated merchant performance and daily summaries.
+This pipeline ingests transaction data from both clean and dirty sources, processes it, and stores it in three layers: Bronze, Silver, and Gold. The Bronze layer stores raw transactions, the Silver layer stores enriched transactions with merchant details, and the Gold layer stores aggregated merchant performance and daily summaries.
 
 ## Data Flow Diagram
-
-```
-+----------------+     +--------------------+     +--------------------+     +--------------------+     +--------------------+
-|  Source       |     |  Bronze Layer      |     |  Silver Layer      |     |  Gold Layer        |     |  Gold Layer        |
-|  (Clean/Dirty) | --> |  bronze_transactions | --> |  silver_transactions | --> |  gold_merchant_performance | --> |  gold_daily_summary |
-+----------------+     +--------------------+     +--------------------+     +--------------------+     +--------------------+
+```plaintext
+SOURCE
+    |
+    v
+BRONZE_TRANSACTIONS
+    |
+    v
+TRANSFORM (Clean, Enrich)
+    |
+    v
+SILVER_TRANSACTIONS
+    |
+    v
+AGGREGATE (Merchant Performance, Daily Summary)
+    |
+    v
+GOLD_MERCHANT_PERFORMANCE
+    |
+    v
+GOLD_DAILY_SUMMARY
 ```
 
 ## Key Design Decisions
-
-- **Layered Approach**: The pipeline uses a Bronze-Silver-Gold approach to separate raw data ingestion, data enrichment, and aggregation.
-- **Quality Flags**: Transactions are flagged as 'CLEAN' or 'FAILED' to distinguish between successful and failed transactions.
-- **Merchant Enrichment**: Merchant details are joined with transactions during the transformation to Silver to enrich the data.
-- **Aggregation**: Aggregations are computed at the Gold layer to provide insights into merchant performance and daily summaries.
+- **Layered Storage**: The pipeline uses a three-tier storage approach to ensure data integrity and ease of access at different stages of processing.
+- **Enrichment in Silver Layer**: Merchant details are added in the Silver layer to ensure that all transactions have enriched data before aggregation.
+- **Aggregation in Gold Layer**: Aggregations are performed in the Gold layer to provide high-level metrics and summaries, keeping the raw and enriched data separate.
+- **Use of DuckDB**: DuckDB is chosen for its speed and ease of use for analytical queries, suitable for both development and production environments.
 
 ## Known Limitations
-
-- **Single Source**: The pipeline currently supports only one source of transactions. Adding more sources would require modifications.
-- **No Error Handling**: The pipeline does not handle errors during data ingestion or transformation, leading to potential data loss.
-- **Static Merchant Data**: Merchant data is loaded once and not updated unless the pipeline is rerun, which may not reflect real-time changes.
-- **Limited Transformations**: The pipeline performs basic transformations and does not support complex data manipulations.
+- **Single Source**: The pipeline currently only processes data from predefined clean and dirty sources, without support for dynamic data sources.
+- **Static Merchant Data**: Merchant data is loaded once at the start and not updated dynamically, which could lead to stale merchant information.
+- **Limited Error Handling**: The pipeline has basic error handling, which may not cover all edge cases and could lead to data inconsistencies.
+- **No Data Validation**: There is no comprehensive data validation step, which could result in incorrect data being processed.
 
 ## Dependencies
-
-- **DuckDB**: The pipeline relies on DuckDB for data storage and querying.
-- **MERCHANTS**: A list of merchant details used for enriching transactions.
-- **TRANSACTIONS_CLEAN and TRANSACTIONS_DIRTY**: The source data files containing transaction records.
+- **DuckDB**: The pipeline relies on DuckDB for database operations.
+- **MERCHANTS**: A predefined list of merchants used for enriching transaction data.
+- **TRANSACTIONS_CLEAN and TRANSACTIONS_DIRTY**: Source data files containing clean and dirty transactions, respectively.

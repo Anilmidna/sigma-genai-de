@@ -1,12 +1,12 @@
 {
   "sprint": "observability",
-  "generated_at": "2026-05-27T14:44:57.798084",
+  "generated_at": "2026-05-27T18:05:51.277546",
   "evidently_mode": "full",
   "model_used": "amazon.nova-lite-v1:0",
   "token_usage": {
     "morning_report": {
-      "input": 401,
-      "output": 343
+      "input": 433,
+      "output": 371
     }
   },
   "silver_quality": {
@@ -48,8 +48,12 @@
       "payment_method"
     ],
     "dataset_drifted": false,
-    "drift_share": 0.5,
-    "drifted_columns": []
+    "drift_share": 0.16666666666666666,
+    "drifted_columns": [
+      "customer_id",
+      "transaction_id",
+      "merchant_id"
+    ]
   },
   "files_generated": [
     "devops_brain/observability/silver_quality_report.html",
@@ -57,5 +61,5 @@
     "devops_brain/observability/morning_report.md",
     "devops_brain/observability_report.json"
   ],
-  "student_judgment": "I would escalate the spike in merchant transaction failure rates first because it could indicate a payment gateway outage or fraud activity causing immediate financial and customer impact."
+  "student_judgment": "I would immediately escalate Zomato's 100% failure rate because a complete payment or checkout outage for a major merchant directly impacts revenue, indicates a critical integration failure, and requires urgent technical resolution."
 }

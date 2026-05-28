@@ -55,8 +55,9 @@ REGION        = "us-east-1"
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
+DEVOPS_BRAIN_DIR = os.path.join(SCRIPT_DIR, "devops_brain")
 OUTPUT_DIR      = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "output"))
-COMPETITIVE_DIR  = os.path.join(DEVOPS_BRAIN_DIR, "competitive")
+COMPETITIVE_DIR = OUTPUT_DIR   # all sprint outputs go to labs/output/
 CHALLENGE_PATH  = os.path.join(SCRIPT_DIR, "challenge_pipeline.py")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -476,7 +477,7 @@ into the test file so it runs without any imports from challenge_pipeline.
     # Run pytest
     try:
         proc = subprocess.run(
-            [sys.executable, "-m", "pytest", test_file, "-v", "--tb=short", "--no-header", "-q"],
+            [sys.executable, "-m", "pytest", test_file, "-v", "--tb=short", "--no-header"],
             capture_output=True, text=True, timeout=30,
             cwd=SCRIPT_DIR,
         )

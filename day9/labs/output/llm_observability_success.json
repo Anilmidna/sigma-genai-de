@@ -1,0 +1,7 @@
+{
+  "status": "success",
+  "phoenix_active": true,
+  "total_spans_captured": 1,
+  "llm_inference_calls": 1,
+  "llm_observability_verified": true
+}
