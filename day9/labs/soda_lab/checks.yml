@@ -1,5 +1,13 @@
 # These checks act as the "Data Contract" for our pipeline
+<<<<<<< HEAD
 checks for day2_orders:
+=======
+<<<<<<< HEAD
+checks for day1_orders:
+=======
+checks for day2_orders:
+>>>>>>> 3b44ff8 (Final push day 9)
+>>>>>>> 50b042f (Final Status)
   # 1. We must have data
   - row_count > 0
   

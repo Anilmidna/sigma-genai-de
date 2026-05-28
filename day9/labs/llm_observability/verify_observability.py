@@ -14,6 +14,27 @@ def main():
         sys.exit(1)
         
     try:
+<<<<<<< HEAD
+        try:
+            client = Client(base_url="http://localhost:6006")
+        except TypeError:
+            client = Client(endpoint="http://localhost:6006")
+        
+=======
+<<<<<<< HEAD
+        client = Client(endpoint="http://localhost:6006")
+>>>>>>> 50b042f (Final Status)
+        # Test connection by listing projects
+        try:
+            client.projects.list()
+        except AttributeError:
+            client.get_projects()
+    except Exception as e:
+        print("❌ Error: Could not connect to local Phoenix server on http://localhost:6006.")
+<<<<<<< HEAD
+        print(f"   (Details: {e})")
+=======
+=======
         try:
             client = Client(base_url="http://localhost:6006")
         except TypeError:
@@ -27,6 +48,8 @@ def main():
     except Exception as e:
         print("❌ Error: Could not connect to local Phoenix server on http://localhost:6006.")
         print(f"   (Details: {e})")
+>>>>>>> 3b44ff8 (Final push day 9)
+>>>>>>> 50b042f (Final Status)
         print("   Ensure your python script with px.launch_app() is running in the background.")
         sys.exit(1)
         
