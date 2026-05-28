@@ -74,6 +74,9 @@ except ImportError:
 
 try:
     import pandas as pd
+    import numpy as np
+    if not hasattr(np, 'float_'):
+        np.float_ = np.float64
 except ImportError:
     print("[ERROR] pandas not installed. Run: pip install pandas")
     sys.exit(1)

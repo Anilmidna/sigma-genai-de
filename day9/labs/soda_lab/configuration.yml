@@ -1,0 +1,3 @@
+data_source soda_duckdb:
+  type: duckdb
+  path: soda_training.duckdb

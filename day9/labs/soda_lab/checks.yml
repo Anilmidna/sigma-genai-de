@@ -1,0 +1,18 @@
+# These checks act as the "Data Contract" for our pipeline
+checks for day1_orders:
+  # 1. We must have data
+  - row_count > 0
+  
+  # 2. Primary keys must be unique and not null
+  - missing_count(order_id) = 0
+  - duplicate_count(order_id) = 0
+  
+  # 3. Foreign keys must exist
+  - missing_count(customer_id) = 0
+  
+  # 4. Business logic: Amounts cannot be negative
+  - min(amount) >= 0
+  
+  # 5. Business logic: Status must be a known value
+  - invalid_count(status) = 0:
+      valid values: ['COMPLETED', 'PENDING', 'FAILED']
