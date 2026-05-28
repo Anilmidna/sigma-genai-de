@@ -56,7 +56,7 @@ REGION        = "us-east-1"
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR      = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "output"))
-COMPETITIVE_DIR = OUTPUT_DIR   # all sprint outputs go to labs/output/
+COMPETITIVE_DIR  = os.path.join(DEVOPS_BRAIN_DIR, "competitive")
 CHALLENGE_PATH  = os.path.join(SCRIPT_DIR, "challenge_pipeline.py")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
