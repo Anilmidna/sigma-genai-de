@@ -1,0 +1,7 @@
+{
+  "status": "success",
+  "server_running": true,
+  "database_services_count": 1,
+  "tables_ingested_count": 8,
+  "data_quality_tests_count": 3
+}

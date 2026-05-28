@@ -1,0 +1,65 @@
+{
+  "sprint": "observability",
+  "generated_at": "2026-05-27T18:05:51.277546",
+  "evidently_mode": "full",
+  "model_used": "amazon.nova-lite-v1:0",
+  "token_usage": {
+    "morning_report": {
+      "input": 433,
+      "output": 371
+    }
+  },
+  "silver_quality": {
+    "total_rows": 14,
+    "total_columns": 12,
+    "null_rates_pct": {
+      "transaction_id": 0.0,
+      "amount": 0.0,
+      "status": 0.0,
+      "merchant_id": 0.0,
+      "customer_id": 0.0,
+      "transaction_date": 0.0,
+      "payment_method": 0.0,
+      "merchant_name": 0.0,
+      "category": 0.0,
+      "city": 0.0,
+      "quality_flag": 0.0,
+      "ingestion_timestamp": 0.0
+    },
+    "columns_with_nulls": {},
+    "unique_statuses": 3,
+    "status_counts": {
+      "COMPLETED": 11,
+      "FAILED": 2,
+      "PENDING": 1
+    },
+    "amount_min": 65.0,
+    "amount_max": 3400.0,
+    "amount_mean": 1002.86
+  },
+  "bronze_silver_drift": {
+    "columns_compared": [
+      "transaction_id",
+      "amount",
+      "status",
+      "merchant_id",
+      "customer_id",
+      "transaction_date",
+      "payment_method"
+    ],
+    "dataset_drifted": false,
+    "drift_share": 0.16666666666666666,
+    "drifted_columns": [
+      "customer_id",
+      "transaction_id",
+      "merchant_id"
+    ]
+  },
+  "files_generated": [
+    "devops_brain/observability/silver_quality_report.html",
+    "devops_brain/observability/bronze_silver_drift_report.html",
+    "devops_brain/observability/morning_report.md",
+    "devops_brain/observability_report.json"
+  ],
+  "student_judgment": "I would immediately escalate Zomato's 100% failure rate because a complete payment or checkout outage for a major merchant directly impacts revenue, indicates a critical integration failure, and requires urgent technical resolution."
+}
