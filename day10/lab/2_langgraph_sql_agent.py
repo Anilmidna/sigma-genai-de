@@ -9,7 +9,8 @@ Sigma DataTech's analytics lead is tired of writing SQL. She wants to ask
 questions in plain English and get answers from the Gold layer instantly.
 
 But there's a catch: junior engineers using raw NL2SQL ship wrong queries.
-The CFO caught one last week — a query that double-counted refunds.
+The CFO caught one last week — a query th
+a           t double-counted refunds.
 
 Your solution: a 2-agent pipeline where Agent 1 generates SQL and Agent 2
 independently reviews and optimises it BEFORE execution. If Agent 2 rejects
