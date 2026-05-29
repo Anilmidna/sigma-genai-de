@@ -1,0 +1,11 @@
+{
+  "check": "testing",
+  "test_file": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day9/labs/output/test_challenge_pipeline.py",
+  "tests_ran": 4,
+  "passed": 4,
+  "failed": 0,
+  "errors": 0,
+  "pass_threshold": 2,
+  "check_passed": true,
+  "pytest_output": "============================= test session starts ==============================\ncollecting ... collected 3 items\n\n../output/test_challenge_pipeline.py::test_filter_recent_transactions_boundary PASSED [ 33%]\n../output/test_challenge_pipeline.py::test_apply_silver_rules_filter_none_transaction_id PASSED [ 66%]\n../output/test_challenge_pipeline.py::test_apply_silver_rules_filter_negative_amount PASSED [100%]\n\n============================== 3 passed in 0.10s ===============================\n"
+}

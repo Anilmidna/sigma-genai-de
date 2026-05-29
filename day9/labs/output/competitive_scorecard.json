@@ -1,0 +1,56 @@
+{
+  "sprint": "Sprint 6 — Competitive Build",
+  "generated_at": "2026-05-28T12:18:14.573012",
+  "challenge_pipeline": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day9/labs/competitive_build/challenge_pipeline.py",
+  "score": 5,
+  "max_score": 5,
+  "verdict": "SHIP",
+  "student_judgment": "I would fix the missing datetime import in apply_silver_rules to prevent a runtime NameError crash on the very first execution.",
+  "checks": {
+    "code_review": {
+      "check": "code_review",
+      "model": "amazon.nova-lite-v1:0",
+      "total_findings": 5,
+      "critical": 2,
+      "high": 1,
+      "planted_bugs_caught": 4,
+      "pass_threshold": 3,
+      "passed": true,
+      "review": "[CRITICAL] — Missing import for datetime\n  Location: apply_silver_rules function\n  Problem: The datetime module is used but not imported, causing a NameError at runtime.\n  Fix: Add `from datetime import datetime` at the top of the script.\n\n[CRITICAL] — Incorrect date comparison in filter_recent_transactions\n  Location: filter_recent_transactions function, line 15\n  Problem: The comparison uses `>=` instead of `>`, causing transactions on the cutoff date to be included.\n  Fix: Change `if txn_date >= cutoff:` to `if txn_date > cutoff:`.\n\n[HIGH] — Untracked dependency in requirements.txt\n  Location: Line 6\n  Problem: The requests module is imported but not listed in the requirements.txt, causing an ImportError in CI.\n  Fix: Add `requests` to the requirements.txt file.\n\n[MEDIUM] — Exception swallowing in load_to_silver\n  Location: load_to_silver function, line 20\n  Problem: Exceptions during insertion are logged but not propagated, causing silent data loss.\n  Fix: Rethrow the exception or handle it appropriately to ensure the caller is aware of the failure.\n\n[MEDIUM] — Potential performance issue with large transactions list\n  Location: apply_silver_rules function, line 10\n  Problem: The use of `seen_ids.add(txn[\"transaction_id\"])` inside a loop may lead to performance issues with very large lists.\n  Fix: Consider using a more efficient data structure or approach if performance becomes an issue."
+    },
+    "documentation": {
+      "check": "documentation",
+      "total_functions": 5,
+      "documented_functions": 5,
+      "coverage_pct": 100.0,
+      "pass_threshold_pct": 50,
+      "ai_doc_score": 6,
+      "ai_doc_reason": "Docstrings are present for each function, but there are missing type hints and some critical bugs are documented as comments.",
+      "passed": true
+    },
+    "testing": {
+      "check": "testing",
+      "test_file": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day9/labs/output/test_challenge_pipeline.py",
+      "tests_ran": 4,
+      "passed": 4,
+      "failed": 0,
+      "errors": 0,
+      "pass_threshold": 2,
+      "check_passed": true,
+      "pytest_output": "============================= test session starts ==============================\ncollecting ... collected 3 items\n\n../output/test_challenge_pipeline.py::test_filter_recent_transactions_boundary PASSED [ 33%]\n../output/test_challenge_pipeline.py::test_apply_silver_rules_filter_none_transaction_id PASSED [ 66%]\n../output/test_challenge_pipeline.py::test_apply_silver_rules_filter_negative_amount PASSED [100%]\n\n============================== 3 passed in 0.10s ===============================\n"
+    },
+    "ci_slo": {
+      "check": "ci_slo",
+      "ci_yml_found": true,
+      "ci_yml_path": "/Users/as-mac-1184/Desktop/GenAI_Training/sigma-genai-de/day9/labs/competitive_build/devops_brain/pipeline_ci.yml",
+      "slo_json_found": true,
+      "passed": true
+    },
+    "observability": {
+      "check": "observability",
+      "obs_report_found": true,
+      "slo_priority": "Monitor for ImportError in CI, as it will halt the pipeline immediately and prevent further issues.",
+      "passed": true
+    }
+  }
+}

@@ -14,11 +14,11 @@ def main():
         sys.exit(1)
         
     try:
-        client = Client(endpoint="http://localhost:6006")
+        client = Client()
         # Test connection by listing projects
-        client.get_projects()
+        client.projects.list()
     except Exception as e:
-        print("❌ Error: Could not connect to local Phoenix server on http://localhost:6006.")
+        print(f"❌ Error: Could not connect to local Phoenix server: {e}")
         print("   Ensure your python script with px.launch_app() is running in the background.")
         sys.exit(1)
         

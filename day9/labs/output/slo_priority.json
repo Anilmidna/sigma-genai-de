@@ -1,0 +1,6 @@
+{
+  "check": "slo_priority",
+  "bugs_used": "1. Missing 'requests' import — will cause ImportError in CI. 2. Off-by-one in date filter (>=) — includes one extra day every run. 3. datetime.datetime used but not imported — NameError at runtime. 4. Exception handler swallows errors silently — invisible data loss.",
+  "slo_priority": "Monitor for ImportError in CI, as it will halt the pipeline immediately and prevent further issues.",
+  "model": "amazon.nova-lite-v1:0"
+}
