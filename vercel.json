@@ -9,8 +9,5 @@
     { "src": "/api/submissions", "dest": "/api/submissions.py" },
     { "src": "/api/debug", "dest": "/api/debug.py" },
     { "src": "/(.*)", "dest": "/dashboard/index.html" }
-  ],
-  "functions": {
-    "api/submissions.py": { "maxDuration": 60 }
-  }
+  ]
 }

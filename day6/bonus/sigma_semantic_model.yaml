@@ -1,0 +1,235 @@
+# ============================================================
+# sigma_semantic_model.yaml
+# Cortex Analyst Semantic Model for Sigma DataTech
+# This file replaces all schema context from Module 2's system prompt
+# ============================================================
+
+name: sigma_datatech_analytics
+description: >
+  Semantic model for Sigma DataTech payment analytics.
+  Covers transaction facts and merchant dimension.
+  Data covers January 2024 (50 sample transactions, 5 merchants).
+
+# ── TABLES ─────────────────────────────────────────────────
+# Describe every table Cortex can query.
+# The better your column descriptions, the more accurate Cortex will be.
+
+tables:
+  - name: FACT_TRANSACTIONS
+    description: >
+      One row per payment transaction processed by Sigma DataTech.
+      This is the primary fact table. Contains 4M rows per day in production.
+      Our lab sample has 50 rows covering Jan 2024.
+    base_table:
+      database: SIGMA_DE
+      schema: PUBLIC
+      table: FACT_TRANSACTIONS
+
+    columns:
+      - name: TRANSACTION_ID
+        description: Unique identifier for each transaction. Format TXN001.
+        data_type: VARCHAR
+
+      - name: AMOUNT
+        description: >
+          Transaction value in US Dollars (USD).
+          IMPORTANT: This column records the attempted amount for ALL transactions
+          including FAILED and PENDING ones. It is NOT the same as revenue.
+          Revenue must filter on STATUS = 'COMPLETED'.
+        data_type: NUMBER
+
+      - name: STATUS
+        description: >
+          Outcome of the transaction attempt.
+          COMPLETED = payment successful, money moved.
+          FAILED = payment rejected (insufficient funds, card declined, etc).
+          PENDING = payment initiated but not yet settled.
+        data_type: VARCHAR
+        sample_values:
+          - COMPLETED
+          - FAILED
+          - PENDING
+
+      - name: MERCHANT_ID
+        description: >
+          Identifier of the merchant who received (or attempted to receive) payment.
+          This is a foreign key — join to DIM_MERCHANT for merchant name and category.
+          Format: MERCH_001, MERCH_002, etc.
+        data_type: VARCHAR
+
+      - name: CUSTOMER_ID
+        description: >
+          Identifier of the customer who initiated the transaction.
+          Format: CUST_001, CUST_002, etc.
+          Customer details not available in current schema.
+        data_type: VARCHAR
+
+      - name: TRANSACTION_DATE
+        description: >
+          Calendar date the transaction was initiated.
+          Data type is DATE (not TIMESTAMP).
+          Use format 'YYYY-MM-DD' for filtering.
+          Our lab data: 2024-01-15 through 2024-01-31.
+        data_type: DATE
+
+      - name: PAYMENT_METHOD
+        description: >
+          Payment instrument used for the transaction.
+          CREDIT_CARD = Visa/Mastercard credit cards.
+          DEBIT_CARD = Bank debit cards.
+          UPI = Unified Payments Interface (India's real-time payment system).
+        data_type: VARCHAR
+        sample_values:
+          - CREDIT_CARD
+          - DEBIT_CARD
+          - UPI
+
+  - name: DIM_MERCHANT
+    description: >
+      Merchant master data. One row per registered merchant partner.
+      Join to FACT_TRANSACTIONS using MERCHANT_ID to get merchant names.
+      Always use MERCHANT_NAME (not MERCHANT_ID) in end-user results.
+    base_table:
+      database: SIGMA_DE
+      schema: PUBLIC
+      table: DIM_MERCHANT
+
+    columns:
+      - name: MERCHANT_ID
+        description: >
+          Primary key for merchants. Format MERCH_001.
+          Matches FACT_TRANSACTIONS.MERCHANT_ID.
+        data_type: VARCHAR
+
+      - name: MERCHANT_NAME
+        description: >
+          Human-readable merchant name. Always use this in output instead
+          of MERCHANT_ID codes. Examples: Swiggy, Flipkart, Zepto.
+        data_type: VARCHAR
+
+      - name: CATEGORY
+        description: >
+          Business category of the merchant.
+          Examples: Food Delivery, E-Commerce, Grocery Delivery,
+          Entertainment, Travel.
+        data_type: VARCHAR
+
+      - name: CITY
+        description: >
+          City where the merchant is headquartered.
+          Examples: Bengaluru, Mumbai, Gurugram.
+        data_type: VARCHAR
+
+# ── RELATIONSHIPS ───────────────────────────────────────────
+# Declare all join paths. Cortex uses this to know which tables
+# to join and on which columns — no guessing required.
+
+relationships:
+  - name: transactions_to_merchant
+    description: >
+      Links each transaction to its merchant for name and category lookups.
+      Always use this join when merchant name or category is needed in output.
+    left_table: FACT_TRANSACTIONS
+    right_table: DIM_MERCHANT
+    join_type: MANY_TO_ONE
+    relationship_columns:
+      - left_column: MERCHANT_ID
+        right_column: MERCHANT_ID
+
+# ── METRICS ─────────────────────────────────────────────────
+# Pre-defined business measures. Cortex uses these when users ask
+# about metrics like "revenue" or "failure rate".
+# This ensures business rules are always applied correctly.
+
+metrics:
+  - name: total_revenue
+    description: >
+      Total revenue from completed transactions only.
+      COMPLETED transactions represent money that actually moved.
+      FAILED and PENDING are excluded from revenue.
+    type: number
+    expr: "SUM(CASE WHEN FACT_TRANSACTIONS.STATUS = 'COMPLETED' THEN FACT_TRANSACTIONS.AMOUNT ELSE 0 END)"
+    table: FACT_TRANSACTIONS
+
+  - name: failure_rate_pct
+    description: >
+      Percentage of transactions that failed.
+      Calculated as (failed count / total count) * 100.
+      Expressed as a percentage between 0 and 100.
+    type: number
+    expr: "ROUND(100.0 * SUM(CASE WHEN FACT_TRANSACTIONS.STATUS = 'FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2)"
+    table: FACT_TRANSACTIONS
+
+  - name: completed_transaction_count
+    description: Count of successfully completed transactions.
+    type: number
+    expr: "SUM(CASE WHEN FACT_TRANSACTIONS.STATUS = 'COMPLETED' THEN 1 ELSE 0 END)"
+    table: FACT_TRANSACTIONS
+
+# ── VERIFIED QUERIES ────────────────────────────────────────
+# These are manually verified question → SQL pairs.
+# Cortex Analyst uses these like few-shot examples —
+# if a user's question closely matches a verified query,
+# Cortex uses that SQL as a high-confidence template.
+# Add your most common business questions here over time.
+
+verified_queries:
+  - name: total_transaction_count
+    question: How many transactions are in the system?
+    sql: "SELECT COUNT(*) AS TOTAL_TRANSACTIONS FROM FACT_TRANSACTIONS"
+    verified_by: Sigma DataTech Data Engineering Team
+    verified_at: "2024-01-31"
+
+  - name: failed_transaction_count
+    question: How many transactions failed?
+    sql: "SELECT COUNT(*) AS FAILED_COUNT FROM FACT_TRANSACTIONS WHERE STATUS = 'FAILED'"
+    verified_by: Sigma DataTech Data Engineering Team
+    verified_at: "2024-01-31"
+
+  - name: revenue_by_merchant
+    question: Which merchant had the highest revenue?
+    sql: |
+      SELECT
+          m.MERCHANT_NAME,
+          SUM(CASE WHEN t.STATUS = 'COMPLETED' THEN t.AMOUNT ELSE 0 END) AS REVENUE_USD
+      FROM FACT_TRANSACTIONS t
+      JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+      GROUP BY m.MERCHANT_NAME
+      ORDER BY REVENUE_USD DESC
+      LIMIT 1
+    verified_by: Sigma DataTech Data Engineering Team
+    verified_at: "2024-01-31"
+
+  - name: failure_rate_by_payment_method
+    question: What is the failure rate for each payment method?
+    sql: |
+      SELECT
+          PAYMENT_METHOD,
+          COUNT(*) AS TOTAL,
+          SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) AS FAILED,
+          ROUND(100.0 * SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2)
+              AS FAILURE_RATE_PCT
+      FROM FACT_TRANSACTIONS
+      GROUP BY PAYMENT_METHOD
+      ORDER BY FAILURE_RATE_PCT DESC
+    verified_by: Sigma DataTech Data Engineering Team
+    verified_at: "2024-01-31"
+
+  - name: merchant_performance_summary
+    question: Give me a full performance summary for all merchants
+    sql: |
+      SELECT
+          m.MERCHANT_NAME,
+          m.CATEGORY,
+          COUNT(t.TRANSACTION_ID) AS TOTAL_TXNS,
+          SUM(CASE WHEN t.STATUS = 'COMPLETED' THEN 1 ELSE 0 END) AS COMPLETED,
+          SUM(CASE WHEN t.STATUS = 'FAILED' THEN 1 ELSE 0 END) AS FAILED,
+          ROUND(100.0 * SUM(CASE WHEN t.STATUS = 'FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2)
+              AS FAILURE_RATE_PCT,
+          SUM(CASE WHEN t.STATUS = 'COMPLETED' THEN t.AMOUNT ELSE 0 END) AS REVENUE_USD
+      FROM FACT_TRANSACTIONS t
+      JOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID
+      GROUP BY m.MERCHANT_NAME, m.CATEGORY
+      ORDER BY REVENUE_USD DESC
+    verified_by: Sigma DataTech Data Engineering Team
+    verified_at: "2024-01-31"

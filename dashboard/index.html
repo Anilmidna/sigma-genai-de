@@ -452,6 +452,26 @@
   /* ── Build tooltip HTML ── */
   function buildTooltip(dayKey, dayNum, dayData, expectedFiles) {
     var files = dayData.files || {};
+
+    // Manual day (presentation grade — no files to check)
+    if (dayData.manual) {
+      var label  = dayData.label || ('Day ' + dayNum);
+      var status = dayData.status || 'missing';
+      var gradeLabel = {
+        master:   '&#128081; Gold Crown — Excellent',
+        complete: '&#10003; Green Tick — Good',
+        partial:  '&#126; Partial — Needs work',
+        missing:  '&#10007; Not yet graded'
+      };
+      var gradeCls = { master: 'file-ok', complete: 'file-ok', partial: '', missing: 'file-miss' };
+      return '<div class="tooltip">' +
+        '<div class="tooltip-title">' + esc(label) + '</div>' +
+        '<div class="tooltip-file"><span class="' + (gradeCls[status] || 'file-miss') + '">' +
+        (gradeLabel[status] || '&#10007; Not yet graded') + '</span></div>' +
+        '<div class="tooltip-file" style="color:#7A8BAD;font-size:11px;margin-top:4px;">Trainer-graded presentation</div>' +
+        '</div>';
+    }
+
     if (Object.keys(files).length === 0) {
       return '<div class="tooltip"><div class="tooltip-title">Day ' + dayNum + '</div>' +
         '<div class="tooltip-file"><span class="file-miss">&#10007;</span> No fork found</div></div>';
