@@ -1,14 +1,38 @@
 import json
 import urllib.request
+import urllib.error
 import sys
 import os
+import base64
 
 URL_BASE = "http://localhost:8585/api/v1"
 
-def check_endpoint(endpoint):
+def get_token():
+    try:
+        payload = {
+            "email": "admin@open-metadata.org",
+            "password": base64.b64encode(b"admin").decode("utf-8")
+        }
+        url = f"{URL_BASE}/users/login"
+        req = urllib.request.Request(url, method="POST")
+        req.add_header("Accept", "application/json")
+        req.add_header("Content-Type", "application/json")
+        json_data = json.dumps(payload).encode("utf-8")
+        
+        with urllib.request.urlopen(req, data=json_data, timeout=5) as response:
+            res = json.loads(response.read().decode('utf-8'))
+            return res.get("accessToken")
+    except Exception as e:
+        print(f"Warning: Failed to obtain authorization token ({e}). Trying request without token.")
+        return None
+
+def check_endpoint(endpoint, token=None):
     try:
         url = f"{URL_BASE}/{endpoint}"
-        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        req = urllib.request.Request(url)
+        req.add_header("Accept", "application/json")
+        if token:
+            req.add_header("Authorization", f"Bearer {token}")
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
                 return json.loads(response.read().decode('utf-8'))
@@ -34,18 +58,21 @@ def main():
         
     print("✓ OpenMetadata Server: RUNNING")
     
+    # Obtain token for authorized endpoints
+    token = get_token()
+    
     # 2. Check Database Services
-    db_services = check_endpoint("services/databaseServices")
+    db_services = check_endpoint("services/databaseServices", token)
     db_service_count = len(db_services.get("data", [])) if db_services else 0
     print(f"✓ Database Services Configured: {db_service_count}")
     
     # 3. Check Ingested Tables
-    tables_data = check_endpoint("tables")
+    tables_data = check_endpoint("tables", token)
     tables_count = len(tables_data.get("data", [])) if tables_data else 0
     print(f"✓ Tables Ingested: {tables_count}")
     
     # 4. Check Data Quality Test Cases
-    test_cases_data = check_endpoint("dataQuality/testCases")
+    test_cases_data = check_endpoint("dataQuality/testCases", token)
     test_cases_count = len(test_cases_data.get("data", [])) if test_cases_data else 0
     print(f"✓ Data Quality Test Cases Configured: {test_cases_count}")
     
