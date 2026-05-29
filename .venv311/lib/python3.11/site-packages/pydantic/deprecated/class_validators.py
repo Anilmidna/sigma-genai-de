@@ -124,13 +124,13 @@ def validator(
         raise PydanticUserError(
             '`@validator` should be used with fields and keyword arguments, not bare. '
             "E.g. usage should be `@validator('<field_name>', ...)`",
-            code='decorator-missing-arguments',
+            code='validator-no-fields',
         )
     elif not all(isinstance(field, str) for field in fields):
         raise PydanticUserError(
             '`@validator` fields should be passed as separate string args. '
             "E.g. usage should be `@validator('<field_name_1>', '<field_name_2>', ...)`",
-            code='decorator-invalid-fields',
+            code='validator-invalid-fields',
         )
 
     mode: Literal['before', 'after'] = 'before' if pre is True else 'after'

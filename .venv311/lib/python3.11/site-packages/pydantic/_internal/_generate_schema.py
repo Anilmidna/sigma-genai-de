@@ -19,7 +19,7 @@ from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
 from functools import partial
-from inspect import Parameter, _ParameterKind
+from inspect import Parameter, _ParameterKind, signature
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from operator import attrgetter
@@ -58,13 +58,7 @@ from typing_inspection.introspection import AnnotationSource, get_literal_values
 from ..aliases import AliasChoices, AliasPath
 from ..annotated_handlers import GetCoreSchemaHandler, GetJsonSchemaHandler
 from ..config import ConfigDict, JsonDict, JsonEncoder, JsonSchemaExtraCallable
-from ..errors import (
-    PydanticForbiddenQualifier,
-    PydanticInvalidForJsonSchema,
-    PydanticSchemaGenerationError,
-    PydanticUndefinedAnnotation,
-    PydanticUserError,
-)
+from ..errors import PydanticSchemaGenerationError, PydanticUndefinedAnnotation, PydanticUserError
 from ..functional_validators import AfterValidator, BeforeValidator, FieldValidatorModes, PlainValidator, WrapValidator
 from ..json_schema import JsonSchemaValue
 from ..version import version_short
@@ -332,15 +326,6 @@ def _add_custom_serialization_from_json_encoders(
         return schema
 
     return schema
-
-
-GENERATE_SCHEMA_ERRORS = (
-    PydanticForbiddenQualifier,
-    PydanticInvalidForJsonSchema,
-    PydanticSchemaGenerationError,
-    PydanticUndefinedAnnotation,
-)
-"""Errors raised during core schema generation. This does *not* include `InvalidSchemaError`, which is raised during schema cleaning."""
 
 
 class InvalidSchemaError(Exception):
@@ -778,7 +763,6 @@ class GenerateSchema:
 
                 if cls.__pydantic_fields_complete__ or cls is BaseModel_:
                     fields = getattr(cls, '__pydantic_fields__', {})
-                    extra_info = getattr(cls, '__pydantic_extra_info__', None)
                 else:
                     if '__pydantic_fields__' not in cls.__dict__:
                         # This happens when we have a loop in the schema generation:
@@ -796,7 +780,7 @@ class GenerateSchema:
                             message=f'Class {cls.__name__!r} is not defined',
                         )
                     try:
-                        fields, extra_info = rebuild_model_fields(
+                        fields = rebuild_model_fields(
                             cls,
                             config_wrapper=self._config_wrapper,
                             ns_resolver=self._ns_resolver,
@@ -820,37 +804,42 @@ class GenerateSchema:
 
                 extras_schema = None
                 extras_keys_schema = None
-                if core_config.get('extra_fields_behavior') == 'allow' and extra_info is not None:
-                    tp = get_origin(extra_info.annotation)
-                    if tp not in DICT_TYPES:
-                        raise PydanticSchemaGenerationError(
-                            'The type annotation for `__pydantic_extra__` must be `dict[str, ...]`'
+                if core_config.get('extra_fields_behavior') == 'allow':
+                    assert cls.__mro__[0] is cls
+                    assert cls.__mro__[-1] is object
+                    for candidate_cls in cls.__mro__[:-1]:
+                        extras_annotation = getattr(candidate_cls, '__annotations__', {}).get(
+                            '__pydantic_extra__', None
                         )
-                    # See the comments in `_get_args_resolving_forward_refs()` for why we need
-                    # to re-evaluate the annotation:
-                    extra_keys_type, extra_items_type = self._get_args_resolving_forward_refs(
-                        extra_info.annotation,
-                        required=True,
-                    )
-                    if extra_keys_type is not str:
-                        extras_keys_schema = self.generate_schema(extra_keys_type)
-                    if not typing_objects.is_any(extra_items_type):
-                        extras_schema = self.generate_schema(extra_items_type)
+                        if extras_annotation is not None:
+                            if isinstance(extras_annotation, str):
+                                extras_annotation = _typing_extra.eval_type_backport(
+                                    _typing_extra._make_forward_ref(
+                                        extras_annotation, is_argument=False, is_class=True
+                                    ),
+                                    *self._types_namespace,
+                                )
+                            tp = get_origin(extras_annotation)
+                            if tp not in DICT_TYPES:
+                                raise PydanticSchemaGenerationError(
+                                    'The type annotation for `__pydantic_extra__` must be `dict[str, ...]`'
+                                )
+                            extra_keys_type, extra_items_type = self._get_args_resolving_forward_refs(
+                                extras_annotation,
+                                required=True,
+                            )
+                            if extra_keys_type is not str:
+                                extras_keys_schema = self.generate_schema(extra_keys_type)
+                            if not typing_objects.is_any(extra_items_type):
+                                extras_schema = self.generate_schema(extra_items_type)
+                            if extras_keys_schema is not None or extras_schema is not None:
+                                break
 
                 generic_origin: type[BaseModel] | None = getattr(cls, '__pydantic_generic_metadata__', {}).get('origin')
 
                 if cls.__pydantic_root_model__:
-                    inner_schema, metadata = self._common_field_schema('root', fields['root'], decorators)
-                    if cls.__doc__ and metadata.get('pydantic_js_updates', {}).get('description'):
-                        # This is a bit of a leaky abstraction, but as the model docstring takes priority
-                        # over the root field's description, we need to override it here. This can't be done
-                        # in the JSON Schema generation logic because the metadata's `pydantic_js_updates` are
-                        # applied last, and overrides any value previously set (so the description set from the
-                        # docstring in `GenerateJsonSchema._update_class_schema()` is overridden):
-                        update_core_metadata(
-                            metadata, pydantic_js_updates={'description': inspect.cleandoc(cls.__doc__)}
-                        )
-
+                    # FIXME: should the common field metadata be used here?
+                    inner_schema, _ = self._common_field_schema('root', fields['root'], decorators)
                     inner_schema = apply_model_validators(inner_schema, model_validators, 'inner')
                     model_schema = core_schema.model_schema(
                         cls,
@@ -861,7 +850,6 @@ class GenerateSchema:
                         post_init=getattr(cls, '__pydantic_post_init__', None),
                         config=core_config,
                         ref=model_ref,
-                        metadata=metadata,
                     )
                 else:
                     fields_schema: core_schema.CoreSchema = core_schema.model_fields_schema(
@@ -990,9 +978,6 @@ class GenerateSchema:
         if args:
             if isinstance(obj, GenericAlias):
                 # PEP 585 generic aliases don't convert args to ForwardRefs, unlike `typing.List/Dict` etc.
-                # This was fixed in https://github.com/python/cpython/pull/30900 (Python 3.11).
-                # TODO: this shouldn't be necessary (probably even this `_get_args_resolving_forward_refs()` function)
-                # once we drop support for Python 3.10 *or* if we implement our own `typing._eval_type()` implementation.
                 args = (_typing_extra._make_forward_ref(a) if isinstance(a, str) else a for a in args)
             args = tuple(self._resolve_forward_ref(a) if isinstance(a, ForwardRef) else a for a in args)
         elif required:  # pragma: no cover
@@ -1125,10 +1110,6 @@ class GenerateSchema:
             return self._literal_schema(obj)
         elif is_typeddict(obj):
             return self._typed_dict_schema(obj, None)
-        elif inspect.isclass(obj) and issubclass(obj, Enum):
-            # NOTE: this must come before the `is_namedtuple()` check as enums values
-            # can be namedtuples:
-            return self._enum_schema(obj)
         elif _typing_extra.is_namedtuple(obj):
             return self._namedtuple_schema(obj, None)
         elif typing_objects.is_newtype(obj):
@@ -1147,7 +1128,9 @@ class GenerateSchema:
                 self._get_first_arg_or_any(obj),
             )
         elif isinstance(obj, VALIDATE_CALL_SUPPORTED_TYPES):
-            return self._call_schema(obj)  # pyright: ignore[reportArgumentType]
+            return self._call_schema(obj)
+        elif inspect.isclass(obj) and issubclass(obj, Enum):
+            return self._enum_schema(obj)
         elif obj is ZoneInfo:
             return self._zoneinfo_schema()
 
@@ -1437,7 +1420,7 @@ class GenerateSchema:
 
                 fields: dict[str, core_schema.TypedDictField] = {}
 
-                decorators = DecoratorInfos.build(typed_dict_cls, replace_wrapped_methods=False)
+                decorators = DecoratorInfos.build(typed_dict_cls)
                 decorators.update_from_config(self._config_wrapper)
 
                 if self._config_wrapper.use_attribute_docstrings:
@@ -1549,11 +1532,9 @@ class GenerateSchema:
                 annotations = _typing_extra.get_cls_type_hints(namedtuple_cls, ns_resolver=self._ns_resolver)
             except NameError as e:
                 raise PydanticUndefinedAnnotation.from_name_error(e) from e
-
-            # Filter annotations to only include fields that are actually in the NamedTuple
-            # (as subclassing an existing NamedTuple is not supported yet - see https://github.com/python/typing/issues/427)
-            # and use `Any` if no annotation exist (i.e. when using `collections.namedtuple()`).
-            annotations = {field_name: annotations.get(field_name, Any) for field_name in namedtuple_cls._fields}
+            if not annotations:
+                # annotations is empty, happens if namedtuple_cls defined via collections.namedtuple(...)
+                annotations: dict[str, Any] = dict.fromkeys(namedtuple_cls._fields, Any)
 
             if typevars_map:
                 annotations = {
@@ -1909,7 +1890,7 @@ class GenerateSchema:
 
                 decorators = dataclass.__dict__.get('__pydantic_decorators__')
                 if decorators is None:
-                    decorators = DecoratorInfos.build(dataclass, replace_wrapped_methods=False)
+                    decorators = DecoratorInfos.build(dataclass)
                     decorators.update_from_config(self._config_wrapper)
                 # Move kw_only=False args to the start of the list, as this is how vanilla dataclasses work.
                 # Note that when kw_only is missing or None, it is treated as equivalent to kw_only=True
@@ -1964,7 +1945,7 @@ class GenerateSchema:
         return_schema: core_schema.CoreSchema | None = None
         config_wrapper = self._config_wrapper
         if config_wrapper.validate_return:
-            sig = _typing_extra.signature_no_eval(function)
+            sig = signature(function)
             return_hint = sig.return_annotation
             if return_hint is not sig.empty:
                 globalns, localns = self._types_namespace
@@ -1989,7 +1970,7 @@ class GenerateSchema:
             Parameter.KEYWORD_ONLY: 'keyword_only',
         }
 
-        sig = _typing_extra.signature_no_eval(function)
+        sig = signature(function)
         globalns, localns = self._types_namespace
         type_hints = _typing_extra.get_function_type_hints(function, globalns=globalns, localns=localns)
 
@@ -2066,7 +2047,7 @@ class GenerateSchema:
             Parameter.KEYWORD_ONLY: 'keyword_only',
         }
 
-        sig = _typing_extra.signature_no_eval(function)
+        sig = signature(function)
         globalns, localns = self._types_namespace
         type_hints = _typing_extra.get_function_type_hints(function, globalns=globalns, localns=localns)
 
@@ -2182,14 +2163,8 @@ class GenerateSchema:
             pydantic_js_updates={'readOnly': True, **(pydantic_js_updates if pydantic_js_updates else {})},
             pydantic_js_extra=pydantic_js_extra,
         )
-        exclude_if = d.info.exclude_if
-        # TODO: Should we support exclude_if from annotations?
         return core_schema.computed_field(
-            d.cls_var_name,
-            return_schema=return_type_schema,
-            alias=d.info.alias,
-            serialization_exclude_if=exclude_if,
-            metadata=core_metadata,
+            d.cls_var_name, return_schema=return_type_schema, alias=d.info.alias, metadata=core_metadata
         )
 
     def _annotated_schema(self, annotated_type: Any) -> core_schema.CoreSchema:
@@ -2305,48 +2280,6 @@ class GenerateSchema:
             if inner:
                 schema['schema'] = inner
             return schema
-
-        if schema['type'] == 'union' and any(
-            choice['type'] == 'missing-sentinel' for choice in core_schema.iter_union_choices(schema)
-        ):
-            # Same behavior as for nullable schemas. This is a bit gross, but we have to support the same pattern
-            filtered_choices = [
-                choice
-                for choice in schema['choices']
-                if (choice[0] if isinstance(choice, tuple) else choice)['type'] != 'missing-sentinel'
-            ]
-            if len(filtered_choices) >= 2:
-                # e.g. `Annotated[int | str | MISSING, Constraint(...)]`. We apply `Constraint(...)` to `int | str`,
-                # and create a new union semantically equivalent to `Annotated[int | str, Constraint(...)] | MISSING`:
-                filtered_union = core_schema.union_schema(filtered_choices)
-                filtered_union = self._apply_single_annotation(filtered_union, metadata)
-                new_union = schema.copy()
-                new_union['choices'] = [
-                    filtered_union,
-                    next(
-                        choice
-                        for choice in schema['choices']
-                        if (choice[0] if isinstance(choice, tuple) else choice)['type'] == 'missing-sentinel'
-                    ),
-                ]
-                return new_union
-            elif len(filtered_choices) == 1:
-                # e.g. `Annotated[int | MISSING, Constraint(...)]`. We apply `Constraint(...)` to `int`, and reconstruct
-                # a new union preserving the order.
-                inner = filtered_choices[0][0] if isinstance(filtered_choices[0], tuple) else filtered_choices[0]
-                inner = self._apply_single_annotation(inner, metadata)
-
-                # Create a new union schema, preserving the order of the union:
-                new_union = schema.copy()
-                new_union['choices'] = [
-                    (inner, choice[1])
-                    if isinstance(choice, tuple) and choice[0]['type'] != 'missing-sentinel'
-                    else inner
-                    if not isinstance(choice, tuple) and choice['type'] != 'missing-sentinel'
-                    else choice
-                    for choice in schema['choices']
-                ]
-                return new_union
 
         original_schema = schema
         ref = schema.get('ref')
@@ -2858,7 +2791,7 @@ class _Definitions:
             else:
                 # `ref` was encountered, at least two times (or only once, but with metadata or a serialization schema):
                 # - Do not inline the `'definition-ref'` schemas (they are not provided in the gather result anyway).
-                # - Store the definition in the `remaining_defs`
+                # - Store the the definition in the `remaining_defs`
                 remaining_defs[ref] = self._resolve_definition(ref, definitions)
 
         for cs in gather_result['deferred_discriminator_schemas']:

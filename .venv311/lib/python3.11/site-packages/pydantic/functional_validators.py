@@ -6,6 +6,7 @@ import dataclasses
 import sys
 import warnings
 from functools import partialmethod
+from types import FunctionType
 from typing import TYPE_CHECKING, Annotated, Any, Callable, Literal, TypeVar, Union, cast, overload
 
 from pydantic_core import PydanticUndefined, core_schema
@@ -178,7 +179,7 @@ class PlainValidator:
 
         def validate(v: object) -> int:
             if not isinstance(v, (int, str)):
-                raise ValueError(f'Expected int or str, got {type(v)}')
+                raise ValueError(f'Expected int or str, go {type(v)}')
 
             return int(v) + 1
 
@@ -406,7 +407,7 @@ def field_validator(
 ) -> Callable[[_V2BeforeAfterOrPlainValidatorType], _V2BeforeAfterOrPlainValidatorType]: ...
 
 
-def field_validator(  # noqa: D417
+def field_validator(
     field: str,
     /,
     *fields: str,
@@ -456,25 +457,29 @@ def field_validator(  # noqa: D417
     For more in depth examples, see [Field Validators](../concepts/validators.md#field-validators).
 
     Args:
-        *fields: The field names the validator should apply to.
+        field: The first field the `field_validator` should be called on; this is separate
+            from `fields` to ensure an error is raised if you don't pass at least one.
+        *fields: Additional field(s) the `field_validator` should be called on.
         mode: Specifies whether to validate the fields before or after validation.
         check_fields: Whether to check that the fields actually exist on the model.
         json_schema_input_type: The input type of the function. This is only used to generate
             the appropriate JSON Schema (in validation mode) and can only specified
             when `mode` is either `'before'`, `'plain'` or `'wrap'`.
 
+    Returns:
+        A decorator that can be used to decorate a function to be used as a field_validator.
+
     Raises:
         PydanticUserError:
-            - If the decorator is used without any arguments (at least one field name must be provided).
-            - If the provided field names are not strings.
-            - If `json_schema_input_type` is provided with an unsupported `mode`.
-            - If the decorator is applied to an instance method.
+            - If `@field_validator` is used bare (with no fields).
+            - If the args passed to `@field_validator` as fields are not strings.
+            - If `@field_validator` applied to instance methods.
     """
-    if callable(field) or isinstance(field, classmethod):
+    if isinstance(field, FunctionType):
         raise PydanticUserError(
-            'The `@field_validator` decorator cannot be used without arguments, at least one field must be provided. '
-            "For example: `@field_validator('<field_name>', ...)`.",
-            code='decorator-missing-arguments',
+            '`@field_validator` should be used with fields and keyword arguments, not bare. '
+            "E.g. usage should be `@validator('<field_name>', ...)`",
+            code='validator-no-fields',
         )
 
     if mode not in ('before', 'plain', 'wrap') and json_schema_input_type is not PydanticUndefined:
@@ -489,9 +494,9 @@ def field_validator(  # noqa: D417
     fields = field, *fields
     if not all(isinstance(field, str) for field in fields):
         raise PydanticUserError(
-            'The provided field names to the `@field_validator` decorator should be strings. '
-            "For example: `@field_validator('<field_name_1>', '<field_name_2>', ...).`",
-            code='decorator-invalid-fields',
+            '`@field_validator` fields should be passed as separate string args. '
+            "E.g. usage should be `@validator('<field_name_1>', '<field_name_2>', ...)`",
+            code='validator-invalid-fields',
         )
 
     def dec(
@@ -499,8 +504,7 @@ def field_validator(  # noqa: D417
     ) -> _decorators.PydanticDescriptorProxy[Any]:
         if _decorators.is_instance_method_from_sig(f):
             raise PydanticUserError(
-                'The `@field_validator` decorator cannot be applied to instance methods',
-                code='validator-instance-method',
+                '`@field_validator` cannot be applied to instance methods', code='validator-instance-method'
             )
 
         # auto apply the @classmethod decorator
@@ -782,7 +786,7 @@ else:
 
         @classmethod
         def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
-            from pydantic._internal._generate_schema import GENERATE_SCHEMA_ERRORS
+            from pydantic import PydanticSchemaGenerationError
 
             # use the generic _origin_ as the second argument to isinstance when appropriate
             instance_of_schema = core_schema.is_instance_schema(_generics.get_origin(source) or source)
@@ -790,7 +794,7 @@ else:
             try:
                 # Try to generate the "standard" schema, which will be used when loading from JSON
                 original_schema = handler(source)
-            except GENERATE_SCHEMA_ERRORS:
+            except PydanticSchemaGenerationError:
                 # If that fails, just produce a schema that can validate from python
                 return instance_of_schema
             else:
