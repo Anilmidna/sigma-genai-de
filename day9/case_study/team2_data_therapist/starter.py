@@ -1,44 +1,3 @@
-<<<<<<< HEAD
-"""
-Data Therapist — Streamlit Application
-AI-Powered Data Quality Simulator for Sigma DataTech
-"""
-=======
-<<<<<<< HEAD
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "shared"))
->>>>>>> 50b042f (Final Status)
-
-import sys
-import os
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime
-
-# Adjust paths to make sure local imports work
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from db.duckdb_manager import DuckDBManager
-from utils.synthetic_data_generator import generate_dirty_data
-from llm.diagnosis_engine import diagnose_dataset
-from llm.remediation_engine import prescribe_remediation
-from utils.validators import calculate_downstream_metrics, generate_comparison_report
-
-# Page Config
-st.set_page_config(
-    page_title="Data Therapist — AI Data Quality Ops",
-    page_icon="🩺",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-<<<<<<< HEAD
-=======
-# Build your 3-round Streamlit app here.
-# Read brief.md for your problem statement and the trap you need to find.
-=======
 """
 Data Therapist — Streamlit Application
 AI-Powered Data Quality Simulator for Sigma DataTech
@@ -69,7 +28,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
->>>>>>> 50b042f (Final Status)
 # Custom Styling (Dark/Futuristic theme elements, custom card animations, and badges)
 st.markdown("""
 <style>
@@ -785,7 +743,3 @@ WHERE transaction_amount &lt; 0;
     
     # Interactive test trigger
     st.info("💡 Try deactivating the naive fix in Round 3 and watch the downstream ledger return to safety!")
-<<<<<<< HEAD
-=======
->>>>>>> 3b44ff8 (Final push day 9)
->>>>>>> 50b042f (Final Status)

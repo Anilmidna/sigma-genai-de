@@ -64,6 +64,9 @@ In this 20-minute walk-through, you will learn how to:
 
 There are two ways to explore OpenMetadata:
 
+> [!IMPORTANT]
+> **Grading / Tracker Requirement:** You **MUST use Option B (Local Docker Sandbox)** to complete the lab and generate the success file for the grading tracker. The Public Sandbox (Option A) is read-only and does not allow you to run ingestions or create test cases, which will cause the verification script to fail.
+
 ### Option A: The Public Sandbox (Easiest & Read-Only)
 Google hosts a shared sandbox loaded with rich mock data from standard enterprises.
 *   **URL:** [sandbox.open-metadata.org](https://sandbox.open-metadata.org)
@@ -72,8 +75,9 @@ Google hosts a shared sandbox loaded with rich mock data from standard enterpris
     > In the public sandbox, you can explore everything but cannot create new database service connections or run ingestion (Steps 3 & 4) because write permissions are restricted.
 
 ### Option B: Local Docker Sandbox (Full Admin Access)
-If you want to actually connect to a local database and ingest metadata yourself, run this command on your machine:
+If you want to connect to a local database and ingest metadata yourself, navigate to this lab directory and start the Docker services (we have pre-downloaded the official `docker-compose.yml` file here for you!):
 ```bash
+cd repo/day9/labs/openmetadata_sandbox
 docker compose up -d
 ```
 *   **Default URL:** `http://localhost:8585`

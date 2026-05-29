@@ -1,0 +1,6 @@
+*SIGMA DATATECH DATA QUALITY ALERT*  
+*Date:*    2023-10-12  
+*Status:*  CRITICAL  
+*Issues:*  2 total — 2 critical, 0 high  
+*Top fix:* Review fixes for future-dated transactions and transaction_id duplicates.  
+*Next review:* 2023-10-13

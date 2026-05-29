@@ -55,14 +55,7 @@ REGION        = "us-east-1"
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
-<<<<<<< HEAD
 DEVOPS_BRAIN_DIR = os.path.join(SCRIPT_DIR, "devops_brain")
-=======
-<<<<<<< HEAD
-=======
-DEVOPS_BRAIN_DIR = os.path.join(SCRIPT_DIR, "devops_brain")
->>>>>>> 3b44ff8 (Final push day 9)
->>>>>>> 50b042f (Final Status)
 OUTPUT_DIR      = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "output"))
 COMPETITIVE_DIR = OUTPUT_DIR   # all sprint outputs go to labs/output/
 CHALLENGE_PATH  = os.path.join(SCRIPT_DIR, "challenge_pipeline.py")
@@ -484,15 +477,7 @@ into the test file so it runs without any imports from challenge_pipeline.
     # Run pytest
     try:
         proc = subprocess.run(
-<<<<<<< HEAD
             [sys.executable, "-m", "pytest", test_file, "-v", "--tb=short", "--no-header"],
-=======
-<<<<<<< HEAD
-            [sys.executable, "-m", "pytest", test_file, "-v", "--tb=short", "--no-header", "-q"],
-=======
-            [sys.executable, "-m", "pytest", test_file, "-v", "--tb=short", "--no-header"],
->>>>>>> 3b44ff8 (Final push day 9)
->>>>>>> 50b042f (Final Status)
             capture_output=True, text=True, timeout=30,
             cwd=SCRIPT_DIR,
         )
