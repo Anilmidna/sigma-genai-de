@@ -1,13 +1,13 @@
 {
   "agent": "SelfHealAgent",
-  "run_timestamp": "2026-06-01T17:55:59.554044",
+  "run_timestamp": "2026-06-01T18:14:15.754847",
   "total_incidents": 3,
-  "healed": 2,
-  "escalated": 3,
+  "healed": 3,
+  "escalated": 0,
   "incidents": [
     {
       "incident_id": "INC-001",
-      "timestamp": "2026-06-01T17:55:50.826394",
+      "timestamp": "2026-06-01T18:14:12.077636",
       "pipeline": "transactions_daily_load",
       "original_error": "IntegrityError: null value in column 'transaction_id' violates not-null constraint",
       "heal_attempt": 1,
@@ -17,7 +17,7 @@
         "fix_action": "drop_bad_rows",
         "fix_safe_to_automate": true,
         "fix_instructions": "Automate the process to drop rows with null values in the 'transaction_id' column before loading the data into the database.",
-        "estimated_data_loss_pct": 0.1
+        "estimated_data_loss_pct": 0.5
       },
       "fix_applied": {
         "status": "fixed",
@@ -35,82 +35,35 @@
     },
     {
       "incident_id": "INC-002",
-      "timestamp": "2026-06-01T17:55:52.392776",
+      "timestamp": "2026-06-01T18:14:14.018300",
       "pipeline": "transactions_daily_load",
       "original_error": "ColumnNotFoundError: column 'upi_ref_id' not found in target table",
       "heal_attempt": 1,
       "diagnosis": {
         "root_cause_category": "schema_drift",
-        "root_cause_summary": "The target table schema has changed and no longer includes the 'upi_ref_id' column, causing the pipeline to fail.",
+        "root_cause_summary": "The target table is missing the 'upi_ref_id' column that is present in the source data, causing a schema mismatch.",
         "fix_action": "add_missing_column",
         "fix_safe_to_automate": true,
-        "fix_instructions": "Add the 'upi_ref_id' column to the target table schema to align it with the incoming data schema.",
+        "fix_instructions": "Add the 'upi_ref_id' column to the target table with an appropriate data type. Ensure that this column is included in future schema definitions to prevent recurrence.",
         "estimated_data_loss_pct": 0
       },
       "fix_applied": {
-        "status": "unknown_action",
-        "action": "add_missing_column"
+        "status": "fixed",
+        "action": "add_missing_column",
+        "action_taken": "added_null_column_upi_ref_id",
+        "output_file": "/Users/as-mac-1122/Downloads/GenAI_D6/sigma-genai-de/day11/lab/agent_outputs/fixed_transactions_raw.csv"
       },
       "validation": {
-        "validation": "skipped",
-        "message": "Status: unknown_action"
+        "validation": "passed",
+        "clean_rows": 500,
+        "message": "Fixed file has 500 clean rows"
       },
-      "outcome": "skipped",
-      "alert_required": true
-    },
-    {
-      "incident_id": "INC-002",
-      "timestamp": "2026-06-01T17:55:54.990700",
-      "pipeline": "transactions_daily_load",
-      "original_error": "ColumnNotFoundError: column 'upi_ref_id' not found in target table",
-      "heal_attempt": 2,
-      "diagnosis": {
-        "root_cause_category": "schema_drift",
-        "root_cause_summary": "The target table schema has changed and no longer includes the 'upi_ref_id' column, causing the pipeline to fail.",
-        "fix_action": "add_missing_column",
-        "fix_safe_to_automate": true,
-        "fix_instructions": "Add the 'upi_ref_id' column to the target table schema to align it with the incoming data schema.",
-        "estimated_data_loss_pct": 0
-      },
-      "fix_applied": {
-        "status": "unknown_action",
-        "action": "add_missing_column"
-      },
-      "validation": {
-        "validation": "skipped",
-        "message": "Status: unknown_action"
-      },
-      "outcome": "skipped",
-      "alert_required": true
-    },
-    {
-      "incident_id": "INC-002",
-      "timestamp": "2026-06-01T17:55:57.763982",
-      "pipeline": "transactions_daily_load",
-      "original_error": "ColumnNotFoundError: column 'upi_ref_id' not found in target table",
-      "heal_attempt": 3,
-      "diagnosis": {
-        "root_cause_category": "schema_drift",
-        "root_cause_summary": "The target table schema has changed and no longer includes the 'upi_ref_id' column, causing the pipeline to fail.",
-        "fix_action": "add_missing_column",
-        "fix_safe_to_automate": true,
-        "fix_instructions": "Modify the target table schema to add the 'upi_ref_id' column with the appropriate data type. Ensure that this change aligns with the data model and business requirements. After the schema is updated, rerun the pipeline.",
-        "estimated_data_loss_pct": 0
-      },
-      "fix_applied": {
-        "status": "unknown_action",
-        "action": "add_missing_column"
-      },
-      "validation": {
-        "validation": "skipped",
-        "message": "Status: unknown_action"
-      },
-      "outcome": "skipped",
-      "alert_required": true
+      "outcome": "passed",
+      "alert_required": false
     },
     {
       "incident_id": "INC-003",
-      "timestamp": "2026-06-01T17:55:59.553575",
+      "timestamp": "2026-06-01T18:14:15.754499",
       "pipeline": "amount_aggregation",
       "original_error": "DataError: invalid input syntax for type numeric: '' on column 'amount'",
       "heal_attempt": 1,
@@ -119,8 +72,8 @@
         "root_cause_summary": "The pipeline failed due to a type mismatch error where empty strings were found in the 'amount' column, which is expected to be of numeric type.",
         "fix_action": "cast_column_type",
         "fix_safe_to_automate": true,
-        "fix_instructions": "Update the data ingestion process to handle empty strings in the 'amount' column by either converting them to NULL or a default numeric value (e.g., 0) before casting the column to numeric.",
-        "estimated_data_loss_pct": 0.1
+        "fix_instructions": "Update the data ingestion process to handle empty strings in the 'amount' column by either converting them to a default numeric value (e.g., 0) or filtering out these rows before processing.",
+        "estimated_data_loss_pct": 0.5
       },
       "fix_applied": {
         "status": "fixed",
@@ -137,5 +90,5 @@
       "alert_required": false
     }
   ],
-  "student_judgment": "It is not a success because silently dropping/muting issues can cause data quality degradation downstream. We should alert/escalate if data loss exceeds a threshold."
+  "student_judgment": "No, this is a dangerous \"silent failure\" because downstream systems and business users will blindly trust and consume incomplete data."
 }
