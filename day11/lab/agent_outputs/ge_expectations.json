@@ -1,0 +1,108 @@
+{
+  "expectation_suite_name": "sigma_transactions_quality",
+  "expectations": [
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "transaction_id"
+      },
+      "severity": "critical",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {
+        "column": "transaction_id"
+      },
+      "severity": "critical",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "amount",
+        "min_value": 0,
+        "max_value": 1000000
+      },
+      "severity": "high",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {
+        "column": "transaction_date",
+        "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+      },
+      "severity": "high",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "currency",
+        "value_set": [
+          "INR",
+          "EUR",
+          "USD"
+        ]
+      },
+      "severity": "high",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "status",
+        "value_set": [
+          "completed",
+          "pending",
+          "failed"
+        ]
+      },
+      "severity": "high",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "merchant_name"
+      },
+      "severity": "medium",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "amount"
+      },
+      "severity": "medium",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "category"
+      },
+      "severity": "medium",
+      "auto_fixable": false,
+      "fix_action": null
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "customer_id"
+      },
+      "severity": "medium",
+      "auto_fixable": false,
+      "fix_action": null
+    }
+  ]
+}
