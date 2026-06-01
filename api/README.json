@@ -1,0 +1,56 @@
+{
+  "project": "Sigma Intelligence Platform — Submission Tracker",
+  "deployed_at": "https://genaide.vercel.app",
+  "purpose": "Live dashboard showing each student's lab submission status per day. Trainer uses it during class to see who is done, who is stuck, and who earned the gold crown.",
+
+  "how_it_works": {
+    "step_1": "dashboard/index.html loads in the browser and calls /api/submissions on page load and on every Refresh click.",
+    "step_2": "api/submissions.py hits the GitHub API — fetches all forks of Anilmidna/sigma-genai-de, then for each fork checks whether the expected output files exist.",
+    "step_3": "Status is computed per student per day: master (crown), complete (tick), partial (tilde), missing (red-x).",
+    "step_4": "For manual days (e.g. presentation days with no file submissions), api/manual_overrides.json is read instead. Trainer edits that file and pushes — Vercel redeploys in ~60 seconds.",
+    "note": "Vercel runs submissions.py as a serverless function on every GET /api/submissions. There is no database — all state comes from GitHub API + manual_overrides.json."
+  },
+
+  "files": {
+    "vercel.json": "Routing config. Maps /api/submissions → submissions.py, /api/debug → debug.py, everything else → dashboard/index.html. Edit here to add new API routes.",
+    "api/submissions.py": "Core logic. Two entry points: build_response() (called by app.py locally) and handler class (called by Vercel serverless). Edit EXPECTED_FILES to add output files for a new day. Edit MASTER_TIER to define crown vs tick threshold per day.",
+    "api/manual_overrides.json": "Trainer-edited file for days with no GitHub submissions (e.g. presentations). Keys: _manual_days (list of day numbers to bypass GitHub), _teams (name→member mapping), _day_labels (display label per day), then one key per day number with student real_name→grade pairs. Valid grades: master, complete, partial, missing.",
+    "api/students.csv": "Maps github_username → real_name. Add a row when a new student forks the repo. Two columns: github_username, real_name.",
+    "api/debug.py": "Serverless endpoint at /api/debug. Returns JSON: whether GITHUB_TOKEN is set, its length, TRAINER_REPO value, and students.csv row count. Use this first when something looks wrong.",
+    "api/app.py": "Flask wrapper for local development only. Not used by Vercel. Run: python api/app.py to test locally.",
+    "api/requirements.txt": "Python dependencies for local Flask server (flask, flask-cors). Vercel only needs the stdlib + boto3 which submissions.py imports conditionally.",
+    "dashboard/index.html": "Single-file frontend. Fetches /api/submissions, renders an HTML table. Status icons defined in STATUS_ICON dict (~line 415). Tooltip per cell built by buildTooltip(). Edit CSS variables at top of <style> to retheme. No build step needed — it is plain HTML/JS.",
+    "set_grade.py": "CLI helper for manual grading. Run: python set_grade.py --team team1 master OR python set_grade.py 'Harshit' complete. Edits manual_overrides.json then does git add+commit+push automatically. Vercel redeploys from the push."
+  },
+
+  "environment_variables": {
+    "GITHUB_TOKEN": "Personal access token with repo scope. Set in Vercel dashboard → Project → Settings → Environment Variables. Without this, /api/submissions returns an error JSON.",
+    "TRAINER_REPO": "Format: owner/repo. Default: Anilmidna/sigma-genai-de. The repo whose forks are scanned. Change this if the trainer repo is renamed or transferred."
+  },
+
+  "adding_a_new_day": {
+    "step_1": "Add an entry to EXPECTED_FILES in api/submissions.py. Key = day number (int). Value = dict of {relative_output_path: display_label}. Paths are relative to dayN/lab/ inside each fork.",
+    "step_2": "Optionally add to MASTER_TIER if this day has a crown tier (core files for complete, extra files for master).",
+    "step_3": "Push. Vercel redeploys. The new day column appears in the dashboard automatically.",
+    "example": "EXPECTED_FILES[10] = {'agent_output.json': 'Agent', 'langgraph_trace.json': 'LangGraph'}"
+  },
+
+  "manual_grading_workflow": {
+    "use_case": "Presentation days, hackathon days, or any day where students do not push files.",
+    "step_1": "Add the day number to _manual_days array in api/manual_overrides.json.",
+    "step_2": "Add a day_label entry: '10': 'Hackathon Day'.",
+    "step_3": "Add a top-level key for the day number with all student real_names set to 'missing'.",
+    "step_4": "During class, run: python set_grade.py --team team1 master (or grade one student at a time).",
+    "step_5": "Each run pushes to GitHub. Vercel redeploys in ~60s. Click Refresh on dashboard.",
+    "tip": "Run python set_grade.py --status to see current grades without pushing anything."
+  },
+
+  "common_fixes": {
+    "dashboard_shows_no_data": "Check /api/debug first. If GITHUB_TOKEN_set is false, set the env var in Vercel dashboard and redeploy.",
+    "student_not_appearing": "Add their github_username and real_name to api/students.csv and push.",
+    "wrong_name_shown": "Fix the real_name in api/students.csv. Names in manual_overrides.json must match real_name exactly (case-insensitive match is applied but exact spelling preferred).",
+    "day_column_missing": "The day number is not in EXPECTED_FILES or _manual_days. Add it and push.",
+    "vercel_deploy_failing": "Check Vercel dashboard → Deployments → latest build log. Most common cause: syntax error in submissions.py or malformed manual_overrides.json.",
+    "github_api_rate_limit": "The token is unauthenticated or expired. Replace GITHUB_TOKEN in Vercel env vars. Authenticated requests get 5000 calls/hour — more than enough for 35 students."
+  }
+}

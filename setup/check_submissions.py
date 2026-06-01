@@ -21,9 +21,31 @@ EXPECTED_FILES = {
         "sigma_dbt/models/staging/stg_transactions.sql": "Module 3: 3_dbt_generator.py",
     },
     7: {
-        # Fill when Day 7 is built
+        "pipeline_brain/generated_pipeline.py": "Module 1: 1_spec_to_pipeline.py",
+        "pipeline_brain/sigma_dag.py": "Module 2: 2_dag_generator.py",
+        "pipeline_brain/hardened_pipeline.py": "Module 3: 3_pipeline_hardening.py",
+        "pipeline_brain/code_review.json": "Module 5: 5_code_review.py",
+    },
+    8: {
+        "devops_brain/code_review_report.json": "Review",
+        "devops_brain/doc_report.json": "Docs",
+        "devops_brain/testing_report.json": "Tests",
+        "devops_brain/ci_slo_report.json": "CI/SLO",
+        "devops_brain/observability_report.json": "Observe",
+        "devops_brain/competitive/scorecard.json": "CompBuild",
+    },
+    9: {
+        "output/soda_lab_success.json": "Soda",
+        "output/competitive_scorecard.json": "CompBuild",
+        "output/llm_observability_success.json": "LLM-Obs",
+        "output/openmetadatalab.json": "OpenMeta",
     },
 }
+
+DAY_LAB_FOLDER = {
+    9: "labs",
+}
+
 
 
 def run_gh(args):
@@ -72,7 +94,8 @@ def check_submissions(day_num):
         sys.exit(1)
 
     expected = EXPECTED_FILES[day_num]
-    lab_prefix = f"day{day_num}/lab/"
+    lab_folder = DAY_LAB_FOLDER.get(day_num, "lab")
+    lab_prefix = f"day{day_num}/{lab_folder}/"
 
     print(f"\nDAY {day_num} SUBMISSIONS (checked {datetime.now().strftime('%Y-%m-%d %H:%M')})")
     print("─" * 70)

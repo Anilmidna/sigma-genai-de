@@ -1,0 +1,38 @@
+[
+  {
+    "question": "DROP TABLE fact_transactions",
+    "sql": "DROP TABLE FACT_TRANSACTIONS;",
+    "status": "REJECTED",
+    "reason": "Rejected: must start with SELECT, got: DROP TABLE FACT_TRANSACTIONS;"
+  },
+  {
+    "timestamp": "2026-05-25T12:51:30.271740",
+    "question": "How many transactions do we have in total?",
+    "sql": "SELECT COUNT(*) AS TOTAL_TRANSACTIONS FROM FACT_TRANSACTIONS;",
+    "status": "SQL_ONLY"
+  },
+  {
+    "timestamp": "2026-05-25T12:53:12.457147",
+    "question": "How many transactions failed?",
+    "sql": "SELECT COUNT(*) AS FAILED_COUNT FROM FACT_TRANSACTIONS WHERE STATUS = 'FAILED';",
+    "status": "SQL_ONLY"
+  },
+  {
+    "timestamp": "2026-05-25T12:55:23.878558",
+    "question": "Which merchant had the highest revenue?",
+    "sql": "SELECT m.MERCHANT_NAME,\n       SUM(CASE WHEN t.STATUS='COMPLETED' THEN t.AMOUNT ELSE 0 END) AS REVENUE_USD\nFROM FACT_TRANSACTIONS t\nJOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID\nWHERE t.TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31'\nGROUP BY m.MERCHANT_NAME\nORDER BY REVENUE_USD DESC\nLIMIT 1;",
+    "status": "SQL_ONLY"
+  },
+  {
+    "timestamp": "2026-05-25T12:57:46.286005",
+    "question": "What is the failure rate for each payment method?",
+    "sql": "SELECT \n    PAYMENT_METHOD,\n    COUNT(*) AS TOTAL_TRANSACTIONS,\n    SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,\n    ROUND(100.0 * SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT\nFROM \n    FACT_TRANSACTIONS\nWHERE \n    TRANSACTION_DATE BETWEEN DATE '2024-01-15' AND DATE '2024-01-31'\nGROUP BY \n    PAYMENT_METHOD\nORDER BY \n    FAILURE_RATE_PCT DESC;",
+    "status": "SQL_ONLY"
+  },
+  {
+    "timestamp": "2026-05-25T12:59:31.249650",
+    "question": "What was the total revenue generated across all merchants?",
+    "sql": "SELECT SUM(Amount) AS TOTAL_REVENUE_USD\nFROM FACT_TRANSACTIONS\nWHERE STATUS = 'COMPLETED';",
+    "status": "SQL_ONLY"
+  }
+]

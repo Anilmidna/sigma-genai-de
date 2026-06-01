@@ -163,10 +163,10 @@ python script3.py
 
 **End of day (30 seconds):**
 ```bash
-python dayN/tests/validate_dayN.py    # All green?
-git add .
-git commit -m "Day N done"
-git push
+python validate_dayN.py     #Run from tests FOLDER & ensure you Pass
+git add .                   #Run from lab FOLDER
+git commit -m "Day N done"  #Run from lab FOLDER
+git push                    #Run from lab FOLDER
 ```
 
 ---
