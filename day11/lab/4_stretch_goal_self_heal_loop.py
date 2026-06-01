@@ -65,6 +65,11 @@ DATA_DIR   = os.path.join(os.path.dirname(__file__), "data")
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "agent_outputs")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+if not os.path.exists(os.path.join(DATA_DIR, "transactions_raw.csv")):
+    print("[ERROR] data/transactions_raw.csv not found.")
+    print("        Run sample_data.py first:  python sample_data.py")
+    sys.exit(1)
+
 MODEL_ID = "amazon.nova-pro-v1:0"
 REGION   = "us-east-1"
 MAX_HEAL_ATTEMPTS = 3   # safety cap — never loop infinitely
@@ -202,6 +207,30 @@ def apply_fix(failure: dict, diagnosis: dict) -> dict:
             df.to_csv(fixed_path, index=False)
             return {"status": "fixed", "action": action,
                     "columns_fixed": list(numeric_cols), "output_file": fixed_path}
+        except Exception as e:
+            return {"status": "fix_failed", "error": str(e)}
+
+    elif action == "add_missing_column":
+        try:
+            df = pd.read_csv(file_path)
+            err = failure.get("error_message", "")
+            col_name = None
+            if "column '" in err:
+                col_name = err.split("column '")[1].split("'")[0]
+            if not col_name:
+                return {"status": "fix_failed", "error": "Could not parse column name from error"}
+            if col_name in df.columns:
+                # Extra column in source not in target — drop it
+                df = df.drop(columns=[col_name])
+                action_taken = f"dropped_extra_column_{col_name}"
+            else:
+                # Column missing from source — add as null to match target schema
+                df[col_name] = None
+                action_taken = f"added_null_column_{col_name}"
+            fixed_path = os.path.join(OUTPUT_DIR, f"fixed_{failure['dataset']}")
+            df.to_csv(fixed_path, index=False)
+            return {"status": "fixed", "action": action,
+                    "action_taken": action_taken, "output_file": fixed_path}
         except Exception as e:
             return {"status": "fix_failed", "error": str(e)}
 
