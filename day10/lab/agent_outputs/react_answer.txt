@@ -1,6 +1,9 @@
 Question: Which 3 merchants had the most suspicious transaction patterns? Look for merchants with high transaction volume but also unusual average amounts (either very high or very low compared to others). Give me their names, transaction count, and average amount.
 
-Steps taken: 6
+Steps taken: 4
 
 Answer:
- - The generated text has been blocked by our content filters.
+The 3 merchants with the most suspicious transaction patterns are:
+1. Tech Gadgets with 1500 transactions and an average amount of $250.0
+2. Fashion Finds with 1400 transactions and an average amount of $10.0
+3. Luxury Items with 1300 transactions and an average amount of $1000.0
