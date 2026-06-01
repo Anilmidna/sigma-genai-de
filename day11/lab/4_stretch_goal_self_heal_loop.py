@@ -65,6 +65,11 @@ DATA_DIR   = os.path.join(os.path.dirname(__file__), "data")
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "agent_outputs")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+if not os.path.exists(os.path.join(DATA_DIR, "transactions_raw.csv")):
+    print("[ERROR] data/transactions_raw.csv not found.")
+    print("        Run sample_data.py first:  python sample_data.py")
+    sys.exit(1)
+
 MODEL_ID = "amazon.nova-pro-v1:0"
 REGION   = "us-east-1"
 MAX_HEAL_ATTEMPTS = 3   # safety cap — never loop infinitely
