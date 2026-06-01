@@ -1,0 +1,18 @@
+[Unit]
+Description=Sigma Intelligence Platform — MCP Tool Server
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/sigma-platform
+EnvironmentFile=/home/ec2-user/sigma-platform/.env
+ExecStart=/usr/bin/python3 lab/sigma_mcp_server.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sigma-mcp-server
+
+[Install]
+WantedBy=multi-user.target
