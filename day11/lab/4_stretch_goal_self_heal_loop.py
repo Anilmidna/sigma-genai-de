@@ -205,6 +205,30 @@ def apply_fix(failure: dict, diagnosis: dict) -> dict:
         except Exception as e:
             return {"status": "fix_failed", "error": str(e)}
 
+    elif action == "add_missing_column":
+        try:
+            df = pd.read_csv(file_path)
+            err = failure.get("error_message", "")
+            col_name = None
+            if "column '" in err:
+                col_name = err.split("column '")[1].split("'")[0]
+            if not col_name:
+                return {"status": "fix_failed", "error": "Could not parse column name from error"}
+            if col_name in df.columns:
+                # Extra column in source not in target — drop it
+                df = df.drop(columns=[col_name])
+                action_taken = f"dropped_extra_column_{col_name}"
+            else:
+                # Column missing from source — add as null to match target schema
+                df[col_name] = None
+                action_taken = f"added_null_column_{col_name}"
+            fixed_path = os.path.join(OUTPUT_DIR, f"fixed_{failure['dataset']}")
+            df.to_csv(fixed_path, index=False)
+            return {"status": "fixed", "action": action,
+                    "action_taken": action_taken, "output_file": fixed_path}
+        except Exception as e:
+            return {"status": "fix_failed", "error": str(e)}
+
     elif action == "cast_column_type":
         # TODO: Students implement this
         # Hint: The error says '' (empty string) in amount column
