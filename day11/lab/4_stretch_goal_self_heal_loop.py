@@ -230,12 +230,43 @@ def apply_fix(failure: dict, diagnosis: dict) -> dict:
             return {"status": "fix_failed", "error": str(e)}
 
     elif action == "cast_column_type":
-        # TODO: Students implement this
-        # Hint: The error says '' (empty string) in amount column
-        # Fix: cast to numeric, coerce errors to NaN, then fill NaN with 0 or median
-        return {"status": "not_implemented",
-                "action": action,
-                "message": "TODO: Implement cast_column_type fix (see docstring above)"}
+        try:
+            df = pd.read_csv(file_path)
+            # Identify the problematic column from the error message or default to 'amount'
+            error_col = "amount"
+            import re
+            match = re.search(r"column\s+'([^']+)'", failure.get("error_message", ""))
+            if match:
+                error_col = match.group(1)
+
+            if error_col in df.columns:
+                before_nan = df[error_col].isna().sum()
+                numeric_series = pd.to_numeric(df[error_col], errors="coerce")
+                after_nan = numeric_series.isna().sum()
+                rows_fixed = int(after_nan - before_nan)
+
+                # Find median of valid numeric values (default to 0.0 if all NaN)
+                median_val = numeric_series.median()
+                fill_val = median_val if not pd.isna(median_val) else 0.0
+                
+                df[error_col] = numeric_series.fillna(fill_val)
+                fixed_path = os.path.join(OUTPUT_DIR, f"fixed_{failure['dataset']}")
+                df.to_csv(fixed_path, index=False)
+                
+                return {
+                    "status": "fixed",
+                    "action": action,
+                    "rows_fixed": rows_fixed,
+                    "output_file": fixed_path
+                }
+            else:
+                return {
+                    "status": "fix_failed",
+                    "error": f"Column '{error_col}' not found in dataframe."
+                }
+        except Exception as e:
+            return {"status": "fix_failed", "error": str(e)}
+
 
     elif action == "escalate_to_human":
         return {"status": "escalated",
