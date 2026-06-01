@@ -1,0 +1,61 @@
+{
+  "pattern": "swarm",
+  "timestamp": "2026-06-01T11:55:26.506607",
+  "agents": [
+    "SwarmAgent-A",
+    "SwarmAgent-B",
+    "SwarmAgent-C"
+  ],
+  "results": [
+    {
+      "agent_id": "SwarmAgent-A",
+      "task_id": "ROW_BATCH_0",
+      "rows_processed": 50,
+      "nulls_found": 5,
+      "status": "completed",
+      "timestamp": "2026-06-01T11:55:25.984161"
+    },
+    {
+      "agent_id": "SwarmAgent-B",
+      "task_id": "ROW_BATCH_1",
+      "rows_processed": 50,
+      "nulls_found": 5,
+      "status": "completed",
+      "timestamp": "2026-06-01T11:55:26.089315"
+    },
+    {
+      "agent_id": "SwarmAgent-C",
+      "task_id": "ROW_BATCH_2",
+      "rows_processed": 50,
+      "nulls_found": 5,
+      "status": "completed",
+      "timestamp": "2026-06-01T11:55:26.193849"
+    },
+    {
+      "agent_id": "SwarmAgent-A",
+      "task_id": "ROW_BATCH_3",
+      "rows_processed": 50,
+      "nulls_found": 5,
+      "status": "completed",
+      "timestamp": "2026-06-01T11:55:26.298944"
+    },
+    {
+      "agent_id": "SwarmAgent-B",
+      "task_id": "ROW_BATCH_4",
+      "rows_processed": 50,
+      "nulls_found": 5,
+      "status": "completed",
+      "timestamp": "2026-06-01T11:55:26.402428"
+    },
+    {
+      "agent_id": "SwarmAgent-C",
+      "task_id": "ROW_BATCH_5",
+      "rows_processed": 50,
+      "nulls_found": 5,
+      "status": "completed",
+      "timestamp": "2026-06-01T11:55:26.506137"
+    }
+  ],
+  "total_rows": 300,
+  "total_nulls": 30
+}
