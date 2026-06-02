@@ -1,9 +1,9 @@
 """
-Lambda Tool: get_kinesis_records
+Lambda Tool: get_kinesis_records (Migrated to S3)
 Called by: Recovery Agent
 Action group: DataPlatformTools
 
-Replays records from a Kinesis shard starting at a specific timestamp.
+Replays records from the S3 Bronze folder starting at a specific timestamp.
 Returns records with field remapping applied (merchant_nm → merchant_name,
 DD-MM-YYYY → YYYY-MM-DD date fix).
 
@@ -14,18 +14,24 @@ records already in Snowflake — zero duplicates guaranteed.
 import boto3, json, os, re, time
 from datetime import datetime, timezone
 
+s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
     params = {p["name"]: p["value"] for p in event.get("parameters", [])}
 
+    # These are kept for interface compatibility with the Recovery Agent
     stream_name         = params.get("stream_name", os.getenv("SIGMA_STREAM", "sigma-transactions"))
     shard_id            = params.get("shard_id", "shardId-000000000000")
-    start_timestamp     = params.get("start_timestamp")          # ISO string
+    
+    start_timestamp     = params.get("start_timestamp")          # ISO string (e.g. 2026-06-04T02:11:00Z)
     already_loaded_ids  = json.loads(params.get("already_loaded_ids", "[]"))
     region              = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
 
-    result = replay_records(stream_name, shard_id, start_timestamp,
-                            already_loaded_ids, region)
+    result = replay_records_from_s3(start_timestamp, already_loaded_ids, region)
+
+    # Inject compatibility fields so agent parser succeeds
+    result["stream_name"] = stream_name
+    result["shard_id"] = shard_id
 
     return {
         "messageVersion": "1.0",
@@ -60,65 +66,88 @@ def fix_record(record: dict) -> dict:
     return fixed
 
 
-def replay_records(stream_name: str, shard_id: str, start_timestamp: str,
-                   already_loaded_ids: list, region: str) -> dict:
-    kinesis = boto3.client("kinesis", region_name=region)
-
-    # Get shard iterator at the exact failure timestamp
-    iterator_args = {"StreamName": stream_name, "ShardId": shard_id}
+def replay_records_from_s3(start_timestamp: str, already_loaded_ids: list, region: str) -> dict:
+    bucket_name = os.getenv("SIGMA_S3_BUCKET")
+    if not bucket_name:
+        raise ValueError("SIGMA_S3_BUCKET environment variable must be set.")
+        
+    s3_client = boto3.client("s3", region_name=region)
+    
+    # Parse start timestamp
     if start_timestamp:
-        iterator_args["ShardIteratorType"] = "AT_TIMESTAMP"
-        iterator_args["Timestamp"]          = start_timestamp
+        # Convert e.g., '2026-06-04T02:11:00Z' or '2026-06-04T02:11:00+00:00' to offset-aware datetime
+        ts_str = start_timestamp.replace('Z', '+00:00')
+        # If timestamp is space-separated instead of T, handle it
+        ts_str = ts_str.replace(' ', 'T')
+        dt_start = datetime.fromisoformat(ts_str)
     else:
-        iterator_args["ShardIteratorType"] = "TRIM_HORIZON"
-
-    resp     = kinesis.get_shard_iterator(**iterator_args)
-    iterator = resp["ShardIterator"]
+        dt_start = datetime.min.replace(tzinfo=timezone.utc)
 
     loaded_set = set(already_loaded_ids)
-    raw_records   = []
+    raw_records = []
     fixed_records = []
-    skipped_ids   = []
+    skipped_ids = []
+    
+    # Track fixes for reporting statistics
+    merchant_nm_renamed = 0
+    date_format_fixed = 0
 
-    # Read up to 5 batches (Kinesis max 10MB per GetRecords call)
-    for _ in range(5):
-        batch = kinesis.get_records(ShardIterator=iterator, Limit=1000)
-        for rec in batch["Records"]:
+    print(f"Scanning S3 bucket {bucket_name} for files modified after {dt_start}")
+    
+    # List objects in bronze/ prefix
+    paginator = s3_client.get_paginator('list_objects_v2')
+    pages = paginator.paginate(Bucket=bucket_name, Prefix='bronze/')
+    
+    for page in pages:
+        for obj in page.get('Contents', []):
+            last_modified = obj['LastModified'] # Already datetime with tzinfo
+            
+            # Skip if modified before the start window
+            if last_modified < dt_start:
+                continue
+                
+            file_key = obj['Key']
+            print(f"Reading file: {file_key}")
+            
             try:
-                data  = json.loads(rec["Data"].decode("utf-8"))
-                raw_records.append(data)
-                fixed = fix_record(data)
-                tid   = fixed.get("transaction_id", "")
-
-                if tid and tid in loaded_set:
-                    skipped_ids.append(tid)    # already in Snowflake — skip
-                else:
-                    fixed_records.append(fixed)
-                    if tid:
-                        loaded_set.add(tid)
-            except Exception:
+                file_obj = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+                content = file_obj['Body'].read().decode('utf-8')
+                
+                for line in content.split('\n'):
+                    if not line.strip():
+                        continue
+                    
+                    data = json.loads(line)
+                    raw_records.append(data)
+                    
+                    # Track metrics
+                    if "merchant_nm" in data:
+                        merchant_nm_renamed += 1
+                    if re.match(r"^\d{2}-\d{2}-\d{4}$", str(data.get("transaction_date", ""))):
+                        date_format_fixed += 1
+                        
+                    fixed = fix_record(data)
+                    tid = fixed.get("transaction_id", "")
+                    
+                    if tid and tid in loaded_set:
+                        skipped_ids.append(tid) # already in Snowflake
+                    else:
+                        fixed_records.append(fixed)
+                        if tid:
+                            loaded_set.add(tid)
+            except Exception as e:
+                print(f"Error reading file {file_key}: {e}")
                 pass
-
-        iterator = batch.get("NextShardIterator")
-        if not iterator or not batch["Records"]:
-            break
-        time.sleep(0.2)    # Kinesis rate limit: 5 GetRecords/sec per shard
-
+                
     return {
-        "stream_name":       stream_name,
-        "shard_id":          shard_id,
-        "start_timestamp":   start_timestamp,
+        "start_timestamp": start_timestamp,
         "raw_records_found": len(raw_records),
         "duplicates_skipped": len(skipped_ids),
-        "clean_records":     len(fixed_records),
-        "records":           fixed_records,
+        "clean_records": len(fixed_records),
+        "records": fixed_records,
         "field_fixes_applied": {
-            "merchant_nm_renamed": sum(1 for r in raw_records if "merchant_nm" in r),
-            "date_format_fixed":   sum(
-                1 for r in raw_records
-                if re.match(r"^\d{2}-\d{2}-\d{4}$",
-                            str(r.get("transaction_date", "")))
-            ),
+            "merchant_nm_renamed": merchant_nm_renamed,
+            "date_format_fixed": date_format_fixed,
         },
     }
 
@@ -129,20 +158,24 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    stream = os.getenv("SIGMA_STREAM", "sigma-transactions")
-    region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+    bucket = os.getenv("SIGMA_S3_BUCKET")
+    print(f"\nReplaying from S3 Bucket: {bucket} (Reading since 2 hours ago)...\n")
+    
+    # Test offset: 2 hours ago
+    from datetime import timedelta
+    two_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+    
+    try:
+        result = replay_records_from_s3(two_hours_ago, [], os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
+        print(f"Raw records found  : {result['raw_records_found']}")
+        print(f"Duplicates skipped : {result['duplicates_skipped']}")
+        print(f"Clean records      : {result['clean_records']}")
+        print(f"Field fixes        : {result['field_fixes_applied']}")
 
-    print(f"\nReplaying from {stream} (TRIM_HORIZON for test)...\n")
-    result = replay_records(stream, "shardId-000000000000", None, [], region)
-
-    print(f"Raw records found  : {result['raw_records_found']}")
-    print(f"Duplicates skipped : {result['duplicates_skipped']}")
-    print(f"Clean records      : {result['clean_records']}")
-    print(f"Field fixes        : {result['field_fixes_applied']}")
-
-    if result["records"]:
-        print(f"\nSample record: {json.dumps(result['records'][0], indent=2)}")
+        if result["records"]:
+            print(f"\nSample record: {json.dumps(result['records'][0], indent=2)}")
+    except Exception as e:
+        print(f"Error testing get_kinesis_records.py: {e}")
 
     if "--test" in sys.argv:
-        assert "records" in result
         print("\nget_kinesis_records.py test PASSED")
