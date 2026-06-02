@@ -43,6 +43,36 @@ MASTER_TIER = {
             "output/openmetadatalab.json",
         ],
     },
+    10: {
+        # ✅ green tick  = Labs 1 (ReAct) + 2 (LangGraph) + 3 (CrewAI) done
+        "core": [
+            "agent_outputs/react_trace.json",
+            "agent_outputs/langgraph_trace.json",
+            "agent_outputs/crewai_dq_report.json",
+        ],
+        # 👑 gold crown  = above 3 + Lab 4 (Self-Healing) + build tasks
+        "extra": [
+            "agent_outputs/healing_log.json",
+            "agent_outputs/flagged_merchants.json",
+            "agent_outputs/slack_notification.txt",
+        ],
+    },
+    11: {
+        # ✅ green tick  = Labs 1 (multi-agent) + 2 (quality agent) + 3 (PII agent) done
+        "core": [
+            "agent_outputs/pipeline_result.json",    # Lab 1 — sequential pipeline trace
+            "agent_outputs/quality_report.json",     # Lab 2 — ingestion quality agent
+            "agent_outputs/pii_scan_report.json",    # Lab 3 — PII detection agent
+        ],
+        # 👑 gold crown  = above 3 + Lab 4 stretch goal (self-heal loop)
+        "extra": [
+            "agent_outputs/self_heal_incident_report.json",   # Lab 4 — self-heal loop
+        ],
+    },
+}
+
+# GitHub accounts to exclude from the tracker (non-students, test accounts, unknowns)
+EXCLUDED_ACCOUNTS = {
 }
 
 # Days where the lab folder is named differently from the default "lab"
@@ -76,6 +106,41 @@ EXPECTED_FILES = {
         "output/competitive_scorecard.json":     "CompBuild",
         "output/llm_observability_success.json": "LLM-Obs",
         "output/openmetadatalab.json":           "OpenMeta",
+    },
+    10: {
+        # Lab 1 — ReAct Agent
+        "agent_outputs/react_trace.json":        "ReAct",
+        "agent_outputs/react_answer.txt":        "ReAct-Ans",
+        "agent_outputs/flagged_merchants.json":  "FlagTool",   # Lab 1 build task
+        # Lab 2 — LangGraph
+        "agent_outputs/langgraph_trace.json":    "LangGraph",
+        "agent_outputs/approved_queries.json":   "LG-SQL",
+        # Lab 3 — CrewAI
+        "agent_outputs/crewai_dq_report.json":   "CrewAI",
+        "agent_outputs/crewai_fix_queries.sql":  "Crew-SQL",
+        "agent_outputs/slack_notification.txt":  "SlackMsg",   # Lab 3 build task
+        # Lab 4 — Self-Healing
+        "agent_outputs/healing_log.json":        "Healer",
+        "agent_outputs/patched_pipeline.py":     "Patched",
+        "agent_outputs/healing_log_v2.json":     "HealV2",     # Lab 4 build task
+    },
+    11: {
+        # Pre-work — Manual First Exercise (submitted Tuesday evening)
+        "manual_first_annotated.csv":            "PreWork",
+        # Lab 1 — Multi-Agent Architectures (Supervisor + Swarm + Sequential)
+        "agent_outputs/supervisor_result.json":  "Supervisor",
+        "agent_outputs/swarm_result.json":       "Swarm",
+        "agent_outputs/pipeline_result.json":    "Sequential",
+        # Lab 2 — Ingestion Quality Agent
+        "agent_outputs/quality_report.json":     "QualityRpt",
+        "agent_outputs/ge_expectations.json":    "GE-Rules",
+        "agent_outputs/clean_output.csv":        "CleanRows",
+        "agent_outputs/quarantine.csv":          "Quarantine",
+        # Lab 3 — PII Detection + Sensitivity Agent
+        "agent_outputs/pii_scan_report.json":    "PII-Scan",
+        "agent_outputs/sensitivity_report.json": "Sensitivity",
+        # Lab 4 — Self-Heal Loop (stretch goal — crown tier)
+        "agent_outputs/self_heal_incident_report.json": "SelfHeal",
     },
 }
 
@@ -231,6 +296,9 @@ def build_response():
     for fork in forks:
         fork_owner = fork.get('owner', {}).get('login', '')
         fork_repo  = fork.get('name', '')
+
+        if fork_owner in EXCLUDED_ACCOUNTS:
+            continue
         if not fork_owner or not fork_repo:
             continue
 

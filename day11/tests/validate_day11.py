@@ -29,6 +29,7 @@ REQUIRED_FILES = {
 
 STRETCH_FILES = {
     os.path.join(OUTPUT_DIR, "self_heal_incident_report.json"): "4_stretch_goal_self_heal_loop.py",
+    os.path.join(OUTPUT_DIR, "langfuse_demo_results.json"):     "5_langfuse_trace_demo.py",
 }
 
 def check_judgment(json_path: str) -> bool:
