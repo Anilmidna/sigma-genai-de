@@ -29,10 +29,9 @@ She sends you a message:
 > Today it's showing only 40,000 — and it's already 9 AM.
 > The pipeline shows green everywhere. What happened to the other 80,000 records?"*
 
-You check. Lambda is green. Kinesis is green. Firehose is green.
-S3 has files. Everything looks healthy. Nothing is alerting.
+You check. Lambda is green. S3 has files. Everything looks healthy. Nothing is alerting.
 
-The pipeline ran all night. It sent data. Files arrived in S3.
+The pipeline ran all night. Data files arrived in S3 Bronze.
 And somehow **80,000 records never reached Snowflake — never reached the dashboard.**
 
 This is the worst kind of production failure — **the silent one.**
@@ -47,28 +46,19 @@ You have one hour to find what broke before the agents take over.
 ## What You Are Building
 
 ```
-[Data Generator / Kinesis Producer Lambda]
-          ↓  PutRecord
-[Kinesis Data Stream: sigma-transactions]
-          ↓
-[Kinesis Firehose]
-          ↓
-[S3 Bronze: sigma-datatech-<team>/bronze/]
-          ↓
-[S3 ObjectCreated Event]
-          ↓
-[EventBridge Rule]
-          ↓
-[Lambda: pipeline_trigger.py]
-   calls Bedrock Supervisor Agent
-          ↓
+[data_generator.py]  [inject_failure.py — disaster files]
+          ↓                    ↓
+[S3 Bronze: sigma-datatech-<your-name>/bronze/]
+                               ↓ files exist but Snowflake shows 0 rows
+                    [pipeline_trigger.py — you run this]
+                               ↓
 ┌─────────────────────────────────────────────────────────┐
 │              BEDROCK SUPERVISOR AGENT                   │
 │         Amazon Nova Pro + Bedrock Guardrails            │
-│   "GMV ₹0 since 2AM. Pipeline healthy. Investigate."   │
+│   "GMV ₹0 since 2AM. Files in S3. Investigate."        │
 │                                                         │
 │  discovers tools via ──→  [MCP SERVER (Lambda)]        │
-│  queries history via  ──→  [BEDROCK KNOWLEDGE BASE]    │
+│  local knowledge base  ──→  [lab/knowledge_base/]      │
 │                                                         │
 │  delegates to 6 specialist sub-agents:                 │
 │                                                         │
@@ -77,7 +67,7 @@ You have one hour to find what broke before the agents take over.
 └────────────────────────┬────────────────────────────────┘
                          ↓
          [LAMBDA TOOL FUNCTIONS — 9 tools]
-         check_cloudwatch  |  get_kinesis_records
+         check_cloudwatch  |  get_s3_records
          query_snowflake   |  rollback_lambda_version
          create_alarm      |  quarantine_rows
          load_snowflake    |  write_incident_report
@@ -88,7 +78,7 @@ You have one hour to find what broke before the agents take over.
 │  Snowflake: ₹4.69L GMV restored                       │
 │  S3: incident_report_20260604.md (CTO-ready)          │
 │  CloudWatch: 3 new alarms created (live in account)   │
-│  SNS: alert sent → your phone                         │
+│  SNS: alert sent → your email                         │
 │  Lambda: rolled back to stable version                 │
 └────────────────────────────────────────────────────────┘
 ```
@@ -100,9 +90,9 @@ You have one hour to find what broke before the agents take over.
 | Agent | Role | What makes it extraordinary |
 |---|---|---|
 | **Supervisor** | Orchestrates all 6 sub-agents. Re-routes when findings are unexpected. | Reasons across all findings. Does not just collect — decides. |
-| **Forensics** | Correlates CloudWatch + Kinesis + S3 + Snowflake across a timeline. | Finds the 4-minute failure window. Identifies Lambda v2 as root cause. |
+| **Forensics** | Correlates CloudWatch + S3 + Snowflake across a timeline. | Finds the failure window. Identifies Lambda v2 as root cause. |
 | **Impact** | Calculates exact GMV loss. Checks SLA contracts. Confirms breach. | ₹4,72,340 missing. QuickMart threshold ₹50K. Breach confirmed. |
-| **Recovery** | Gets Kinesis shard iterator at failure timestamp. Replays missed records idempotently. | 824 loaded, 23 quarantined. No duplicates. Snowflake row count verified. |
+| **Recovery** | Reads malformed files from S3 Bronze. Applies field mapping. Replays idempotently. | 824 loaded, 23 quarantined. No duplicates. Snowflake row count verified. |
 | **Rollback** | Identifies bad Lambda version. Rolls back via API. Sends test records. | Lambda v2 → v1 in 8 seconds. Verified with 5 live test records. |
 | **Hardening** | Creates 3 new CloudWatch alarms. They exist in your account after this run. | Not recommendations — actual alarms. Live. Right now. |
 | **Incident Report** | Compiles all findings into a CTO-ready post-mortem. Writes to S3. | Timeline, root cause, business impact, fix applied, prevention added. |
@@ -122,15 +112,14 @@ Agents discover tools at runtime — not hardcoded.
 Add a new tool tomorrow → every agent uses it immediately.
 No agent code changes needed.
 
-### Bedrock Knowledge Base (RAG)
-Four document collections in a Bedrock Knowledge Base:
-- `past_incidents/` — every incident report from previous runs
-- `sla_contracts/` — QuickMart, FuelPlus, TechZone SLA PDFs
+### Knowledge Base (Local — no AWS cost)
+Four document collections in `lab/knowledge_base/`:
+- `sla_contracts/` — QuickMart, FuelPlus SLA documents
 - `runbooks/` — engineering runbooks for known failure patterns
 - `data_contracts/` — expected schema per merchant source
 
-Every agent queries this before acting.
-The system gets smarter with every incident.
+Agents query these documents before acting.
+`test_knowledge_base.py` demonstrates the RAG concept locally.
 
 ### Bedrock Guardrails
 Sits between every agent and the LLM:
@@ -142,80 +131,70 @@ This is mandatory for a regulated fintech. Not optional.
 
 ---
 
-## What Is Pre-Configured (Trainer Has Done This)
+## What You Set Up (Everything is in your own AWS account)
 
-Before 11 AM the following are live in AWS:
+Nothing is pre-configured. You build it all. Scripts do the heavy lifting.
 
-| Resource | What it is |
+| Script | What it creates |
 |---|---|
-| Bedrock Supervisor Agent | Configured with 6 sub-agents and all action groups |
-| 6 Bedrock Sub-Agents | Each with instructions, action groups, Knowledge Base access |
-| Bedrock Knowledge Base | Populated with SLA contracts, runbooks, data contracts |
-| Bedrock Guardrail | PII filter + topic denial + grounding enabled |
-| IAM Role: `sigma-lambda-role` | Permissions for all 9 Lambda tools |
-| Kinesis stream: `sigma-transactions` | 1 shard, active |
-| S3 bucket: `sigma-datatech-class` | Firehose destination |
-| SNS Topic: `sigma-alerts` | Your email subscribed |
-| Lambda: `sigma-kinesis-producer` | v1 (stable) and v2 (broken) pre-deployed |
-| The Silent Disaster | Injected — pipeline broke at 2 AM, ₹4.7L missing |
+| `python lab/setup_aws.py` | S3 bucket, SNS topic, IAM role |
+| `bash deploy/deploy_tools.sh` | 9 Lambda tool functions + MCP server |
+| `python lab/create_agents.py` | Guardrail, 6 sub-agents, Supervisor agent |
+| `python lab/disaster/inject_failure.py` | The silent disaster (Lambda v2, S3 files, 0 Snowflake rows) |
 
-**You deploy:** 9 Lambda tool functions.
+**You run:** 4 setup scripts.
+**You investigate:** The silent disaster manually for 60 minutes.
 **You trigger:** The supervisor agent.
 **You watch:** Autonomous recovery.
 **You extend:** Forensics Agent with one new detection rule.
 
 ---
 
-## Prerequisites — Confirm Before 11 AM
+## Setup — Run These In Order
 
 ```bash
-# AWS credentials
+cd repo/day12
+
+# Step 1 — Confirm AWS credentials
 aws sts get-caller-identity
 
-# Kinesis stream active
-aws kinesis describe-stream-summary \
-  --stream-name sigma-transactions \
-  --region us-east-1 \
-  --query 'StreamDescriptionSummary.StreamStatus'
-# Expected: "ACTIVE"
+# Step 2 — Copy and fill in your .env
+cp lab/.env.example lab/.env
+# Open lab/.env and fill in:
+#   SIGMA_S3_BUCKET=sigma-datatech-yourname
+#   ALERT_EMAIL=your@email.com
+#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD
 
-# S3 bucket accessible
-aws s3 ls s3://sigma-datatech-<your-team-name>/
+# Step 3 — Create AWS infrastructure (S3, SNS, IAM role)
+python lab/setup_aws.py
 
-# Snowflake connection
-# Run in Snowflake UI:
-SELECT CURRENT_USER(), CURRENT_WAREHOUSE(), CURRENT_DATABASE();
-
-# Python packages (all dependencies in one command)
+# Step 4 — Install Python packages
 pip install -r lab/requirements.txt
 
-# Optional: Langfuse observability — free at https://langfuse.com
-# Sign up → create a project → copy Public Key + Secret Key into lab/.env
-# Skip this if you don't want the trace dashboard — lab works without it.
+# Step 5 — Deploy 10 Lambda tool functions
+bash deploy/deploy_tools.sh
 
-# Copy environment file
-cp lab/.env.example lab/.env
-# Fill in your team values — Anil will give you the Bedrock agent IDs
+# Step 6 — Verify MCP tool discovery
+python lab/mcp/test_mcp.py
+
+# Step 7 — Create all Bedrock agents (~5-8 min, run and continue working)
+python lab/create_agents.py
+
+# Step 8 — Send 100 clean records and verify in Snowflake
+python lab/data_generator.py --mode clean --records 100
+# Wait 30 seconds, then:
+python lab/investigate/check_snowflake.py
+# Expected: 100 rows in Snowflake
+
+# Step 9 — Inject the silent disaster (run at Phase 1 checkpoint)
+python lab/disaster/inject_failure.py
+# Verify the gap:
+python lab/investigate/check_s3.py       # files exist in S3
+python lab/investigate/check_snowflake.py  # 0 rows for disaster window
 ```
 
-Your `.env` file must have these values before proceeding:
-
-```
-AWS_DEFAULT_REGION=us-east-1
-SIGMA_S3_BUCKET=sigma-datatech-<your-team-name>
-SIGMA_STREAM=sigma-transactions
-SUPERVISOR_AGENT_ID=<from Anil>
-SUPERVISOR_ALIAS_ID=<from Anil>
-GUARDRAIL_ID=<from Anil>
-KNOWLEDGE_BASE_ID=<from Anil>
-SNOWFLAKE_ACCOUNT=<your account>
-SNOWFLAKE_USER=<your user>
-SNOWFLAKE_PASSWORD=<your password>
-SNOWFLAKE_DATABASE=SIGMA
-SNOWFLAKE_WAREHOUSE=SIGMA_WH
-SNS_TOPIC_ARN=arn:aws:sns:us-east-1:<account-id>:sigma-alerts
-LAMBDA_ROLE_ARN=arn:aws:iam::<account-id>:role/sigma-lambda-role
-```
+> `create_agents.py` fills in `SUPERVISOR_AGENT_ID`, `SUPERVISOR_ALIAS_ID`,
+> and `GUARDRAIL_ID` in your `.env` automatically. No IDs from Anil needed.
 
 ---
 
@@ -263,7 +242,7 @@ lab/tools/
 
 ---
 
-### Step 2 — Deploy All 9 Lambda Tool Functions
+### Step 2 — Deploy All 10 Lambda Tool Functions
 
 ```bash
 cd day12
@@ -330,35 +309,44 @@ Tools available to agents:
 ### Step 4 — Run Clean Data Through the Pipeline
 
 ```bash
-python lab/data_generator.py --mode clean --records 100 \
-  --stream sigma-transactions
+python lab/data_generator.py --mode clean --records 100
 ```
 
-Wait 90 seconds for Firehose → S3 delivery, then confirm:
+Wait 30 seconds, then confirm in Snowflake:
 
 ```bash
-aws s3 ls s3://sigma-datatech-<your-team-name>/bronze/ --recursive | tail -5
-```
-
-Confirm in Snowflake:
-```sql
-SELECT COUNT(*), SUM(amount) as gmv
-FROM SIGMA.SILVER.TRANSACTIONS
-WHERE transaction_date = CURRENT_DATE();
+python lab/investigate/check_snowflake.py
 ```
 
 Expected: 100 rows, GMV > 0.
 
 ---
 
+### Step 5 — Inject the Silent Disaster
+
+```bash
+python lab/disaster/inject_failure.py
+```
+
+Verify the gap:
+```bash
+python lab/investigate/check_s3.py        # files exist in bronze/disaster/
+python lab/investigate/check_snowflake.py  # 0 rows for disaster window
+```
+
+This is the state Phase 2 investigates.
+
+---
+
 ### ✅ PHASE 1 CHECKPOINT — 11:45 AM
 
-Every team confirms to Anil:
-1. `deploy_tools.sh` output — all 9 tools OK
+Every student confirms to Anil:
+1. `deploy_tools.sh` — all 10 tools OK
 2. MCP test — 9/9 tools reachable
-3. Snowflake query — 100 rows, positive GMV
+3. Snowflake — 100 rows, positive GMV
+4. `inject_failure.py` — run and verified (S3 has files, Snowflake shows gap)
 
-**All three confirmed = move to Phase 2.**
+**All four confirmed = move to Phase 2.**
 
 ---
 
@@ -381,14 +369,10 @@ Every team confirms to Anil:
 python lab/investigate/check_snowflake.py
 
 # Check S3 — files exist?
-aws s3 ls s3://sigma-datatech-<your-team-name>/bronze/ --recursive | \
-  grep "2026-06-04/02" | wc -l
+python lab/investigate/check_s3.py
 
-# Check CloudWatch — Lambda errors?
-python lab/investigate/check_cloudwatch.py --hours 8
-
-# Check Kinesis — records sent?
-python lab/investigate/check_kinesis.py --hours 8
+# Check CloudWatch — Lambda version change?
+python lab/investigate/check_cloudwatch.py 8
 ```
 
 Look at the outputs carefully. The answers are there.
@@ -401,8 +385,8 @@ You need to connect four signals across four different services.
 Three questions. Answer all three before lunch.
 
 **Question 1 — Where exactly did the data go?**
-Records were sent to Kinesis. Did they reach S3? Did they reach Snowflake?
-Trace the record count at each stage.
+Files are in S3 Bronze. Did they reach Snowflake?
+Run `check_s3.py` and `check_snowflake.py` and compare the counts.
 
 **Question 2 — When exactly did it break?**
 Not "sometime around 2 AM". The exact timestamp. Which CloudWatch metric
@@ -410,7 +394,7 @@ shows the change? What happened at that moment?
 
 **Question 3 — What changed at that moment?**
 Something in the pipeline changed at 02:11 UTC. What was it?
-Check Lambda versions. Check Firehose delivery logs. Check S3 file contents.
+Check Lambda versions. Check the contents of the S3 files themselves.
 
 ---
 
@@ -419,9 +403,8 @@ Check Lambda versions. Check Firehose delivery logs. Check S3 file contents.
 ```
 ## Phase 2 — Manual Investigation
 
-**Records in Kinesis (02:00–02:20 UTC):** _____ records sent
-**Records in S3 (02:00–02:20 UTC):**      _____ files, _____ bytes
-**Records in Snowflake (02:00–02:20):**   _____ rows loaded
+**Records in S3 Bronze (disaster folder):** _____ files, _____ records
+**Records in Snowflake (disaster window):** _____ rows loaded
 
 **Failure timestamp:**   _____ UTC (exact, from CloudWatch)
 **What changed:**        [one sentence — what event at that timestamp]
