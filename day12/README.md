@@ -450,7 +450,7 @@ Save `chaos_log.md` and push before lunch.
 
 ```bash
 python lab/trigger/pipeline_trigger.py \
-  --bucket sigma-datatech-<your-team-name> \
+  --bucket sigma-datatech-matrix \
   --message "Dashboard shows 40,000 transactions today but yesterday showed 1,20,000. \
              80,000 records are missing. Pipeline shows healthy in all monitors — \
              Lambda green, Kinesis green, Firehose green, S3 has files. \

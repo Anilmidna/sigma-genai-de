@@ -194,7 +194,7 @@ def create_lambda_role(iam, account_id, bucket_name):
         resp = iam.create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(trust),
-            Description="Sigma Intelligence Platform — Lambda execution role",
+            Description="Sigma Intelligence Platform - Lambda execution role",
         )
         role_arn = resp["Role"]["Arn"]
         log(f"  Role created: {role_arn}")

@@ -63,14 +63,12 @@ TOOLS = {
     },
     "create_cloudwatch_alarm": {
         "lambda": "sigma-tool-create-alarm",
-        "description": "Create a CloudWatch metric alarm in the current AWS account.",
+        "description": "Create a CloudWatch metric alarm in the current AWS account. Choose from: zero_snowflake_load, lambda_version_change, pipeline_row_divergence.",
         "parameters": {
-            "alarm_name": {"description": "CloudWatch alarm name", "required": True, "type": "string"},
-            "description": {"description": "What the alarm detects", "required": True, "type": "string"},
-            "metric_name": {"description": "CloudWatch metric name", "required": True, "type": "string"},
-            "namespace": {"description": "CloudWatch namespace", "required": True, "type": "string"},
-            "threshold": {"description": "Numeric threshold value", "required": True, "type": "number"},
-            "comparison_operator": {"description": "e.g. LessThanOrEqualToThreshold", "required": True, "type": "string"},
+            "alarm_type": {"description": "Alarm template type: zero_snowflake_load / lambda_version_change / pipeline_row_divergence", "required": True, "type": "string"},
+            "alarm_name": {"description": "Optional custom alarm name override", "required": False, "type": "string"},
+            "description": {"description": "Optional custom description override", "required": False, "type": "string"},
+            "sns_topic_arn": {"description": "Optional SNS topic ARN override for notifications", "required": False, "type": "string"},
         },
     },
     "quarantine_rows": {
@@ -133,7 +131,7 @@ SUB_AGENTS = [
 COLLAB_INSTRUCTIONS = {
     "ForensicsAgent":      "Investigate the pipeline failure root cause. Return structured forensics findings: root cause, failure timestamp, and records gap.",
     "ImpactAgent":         "Calculate business impact of the failure. Query Snowflake for GMV gap and check SLA contracts. Return breach status and notification requirement.",
-    "RecoveryAgent":       "Replay missing records from Kinesis to Snowflake. Only call AFTER RollbackAgent confirms stable. Return rows loaded and quarantine count.",
+    "RecoveryAgent":       "Replay missing records from Kinesis to Snowflake. Only call AFTER RollbackAgent confirms stable. You must tell RecoveryAgent explicitly: 'The Rollback Agent has completed successfully and the pipeline is stable. Replay missing records from Kinesis to Snowflake.' Return rows loaded and quarantine count.",
     "RollbackAgent":       "Roll back the broken Lambda version. Call BEFORE RecoveryAgent. Return rollback status and whether recovery is cleared to proceed.",
     "HardeningAgent":      "Create 3 CloudWatch alarms based on Forensics findings to prevent recurrence. Return alarm names and creation status.",
     "IncidentReportAgent": "Compile all findings into a CTO-ready post-mortem. Write to S3 and send SNS alert. Return report S3 path.",
@@ -170,7 +168,12 @@ def lambda_handler(event, context):
         body = json.dumps({"error": f"Unknown function: {function_name}"})
     else:
         lc   = boto3.client("lambda")
-        resp = lc.invoke(FunctionName=target, Payload=json.dumps(parameters))
+        wrapped = {
+            "actionGroup": action_group,
+            "function": function_name,
+            "parameters": event.get("parameters", [])
+        }
+        resp = lc.invoke(FunctionName=target, Payload=json.dumps(wrapped))
         body = resp["Payload"].read().decode("utf-8")
 
     return {
@@ -345,7 +348,7 @@ def get_or_create_guardrail(bedrock):
 
 # ── Steps 3-8: Sub-agents ───────────────────────────────────────────────────────
 
-def get_or_create_sub_agent(bedrock, name, dispatcher_arn, guardrail_id, account_id):
+def get_or_create_sub_agent(bedrock, name, dispatcher_arn, guardrail_id, account_id, role_arn):
     instructions = (AGENTS_DIR / INSTRUCTION_FILES[name]).read_text()
     tool_names   = AGENT_TOOLS[name]
 
@@ -370,6 +373,7 @@ def get_or_create_sub_agent(bedrock, name, dispatcher_arn, guardrail_id, account
         description=f"Sigma Intelligence Platform — {name}",
         idleSessionTTLInSeconds=1800,
         guardrailConfiguration={"guardrailIdentifier": guardrail_id, "guardrailVersion": "DRAFT"},
+        agentResourceRoleArn=role_arn,
     )
     agent_id = r["agent"]["agentId"]
     log(f"  Agent ID: {agent_id}")
@@ -401,7 +405,7 @@ def get_or_create_sub_agent(bedrock, name, dispatcher_arn, guardrail_id, account
 
 # ── Step 9: Supervisor ──────────────────────────────────────────────────────────
 
-def get_or_create_supervisor(bedrock, sub_agent_data, dispatcher_arn, guardrail_id, account_id):
+def get_or_create_supervisor(bedrock, sub_agent_data, dispatcher_arn, guardrail_id, account_id, role_arn):
     instructions = (AGENTS_DIR / INSTRUCTION_FILES["SupervisorAgent"]).read_text()
 
     supervisor_id = find_agent_by_name(bedrock, "SupervisorAgent")
@@ -413,6 +417,8 @@ def get_or_create_supervisor(bedrock, sub_agent_data, dispatcher_arn, guardrail_
             description="Sigma Intelligence Platform — Supervisor",
             idleSessionTTLInSeconds=1800,
             guardrailConfiguration={"guardrailIdentifier": guardrail_id, "guardrailVersion": "DRAFT"},
+            agentResourceRoleArn=role_arn,
+            agentCollaboration="SUPERVISOR",
         )
         supervisor_id = r["agent"]["agentId"]
         log(f"  Agent ID: {supervisor_id}")
@@ -498,14 +504,15 @@ def main():
     log(f"\nAccount : {account_id}")
     log(f"Region  : {REGION}")
 
-    lc      = boto3.client("lambda",        region_name=REGION)
-    bedrock = boto3.client("bedrock-agent", region_name=REGION)
+    lc           = boto3.client("lambda",        region_name=REGION)
+    bedrock      = boto3.client("bedrock-agent", region_name=REGION)
+    bedrock_core = boto3.client("bedrock",       region_name=REGION)
 
     # 1. Dispatcher Lambda
     dispatcher_arn = deploy_dispatcher(lc, role_arn, account_id)
 
     # 2. Guardrail
-    guardrail_id = get_or_create_guardrail(bedrock)
+    guardrail_id = get_or_create_guardrail(bedrock_core)
     update_env({"GUARDRAIL_ID": guardrail_id})
 
     # 3-8. Sub-agents
@@ -513,7 +520,7 @@ def main():
     for i, name in enumerate(SUB_AGENTS, 3):
         log(f"\n[{i}/9] Creating {name}...")
         agent_id, alias_id, alias_arn = get_or_create_sub_agent(
-            bedrock, name, dispatcher_arn, guardrail_id, account_id
+            bedrock, name, dispatcher_arn, guardrail_id, account_id, role_arn
         )
         sub_agent_data[name] = {
             "id": agent_id, "alias_id": alias_id, "alias_arn": alias_arn
@@ -522,7 +529,7 @@ def main():
     # 9. Supervisor
     log(f"\n[9/9] Creating SupervisorAgent...")
     supervisor_id, supervisor_alias_id = get_or_create_supervisor(
-        bedrock, sub_agent_data, dispatcher_arn, guardrail_id, account_id
+        bedrock, sub_agent_data, dispatcher_arn, guardrail_id, account_id, role_arn
     )
 
     # Write all IDs to .env
