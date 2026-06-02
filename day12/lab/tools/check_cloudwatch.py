@@ -134,6 +134,25 @@ def investigate(function_name: str, hours_back: int, region: str) -> dict:
     except Exception as e:
         findings["kinesis_throttles"] = [{"error": str(e)}]
 
+    # ── Option A Extension: Detect Kinesis PutRecord throttles ───────────────
+    try:
+        resp = cw.get_metric_statistics(
+            Namespace="AWS/Kinesis",
+            MetricName="PutRecord.Throttled",
+            Dimensions=[{"Name": "StreamName", "Value": stream_name}],
+            StartTime=start, EndTime=now, Period=300,
+            Statistics=["Sum"],
+        )
+        findings["kinesis_put_throttles"] = []
+        for dp in sorted(resp.get("Datapoints", []), key=lambda x: x["Timestamp"]):
+            if dp["Sum"] > 0:
+                findings["kinesis_put_throttles"].append({
+                    "timestamp": dp["Timestamp"].isoformat(),
+                    "throttle_count": int(dp["Sum"]),
+                })
+    except Exception as e:
+        findings["kinesis_put_throttles"] = [{"error": str(e)}]
+
     # ── Synthesise: find the anomaly window ───────────────────────────────────
     # Look for the timestamp where the current LIVE Lambda version was modified
     live_version = None
