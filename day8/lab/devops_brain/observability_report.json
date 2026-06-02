@@ -1,12 +1,12 @@
 {
   "sprint": "observability",
-  "generated_at": "2026-05-27T18:01:34.054228",
-  "evidently_mode": "full",
+  "generated_at": "2026-05-27T18:47:59.992416",
+  "evidently_mode": "fallback",
   "model_used": "amazon.nova-lite-v1:0",
   "token_usage": {
     "morning_report": {
       "input": 401,
-      "output": 361
+      "output": 472
     }
   },
   "silver_quality": {
@@ -48,14 +48,15 @@
       "payment_method"
     ],
     "dataset_drifted": false,
-    "drift_share": 0.5,
-    "drifted_columns": []
+    "drift_share": 0.0,
+    "drifted_columns": [],
+    "note": "Fallback mode \u2014 install evidently for HTML reports"
   },
   "files_generated": [
-    "devops_brain/observability/silver_quality_report.html",
-    "devops_brain/observability/bronze_silver_drift_report.html",
+    "devops_brain/observability/fallback_quality_report.txt",
+    "N/A (fallback mode)",
     "devops_brain/observability/morning_report.md",
     "devops_brain/observability_report.json"
   ],
-  "student_judgment": "Any increase in the number of FAILED transactions in the Silver Layer.**"
+  "student_judgment": "I would escalate the seven Bronze-to-Silver dropped rows first because silent record loss directly undermines financial completeness and every downstream KPI built on Silver."
 }

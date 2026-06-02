@@ -1,0 +1,160 @@
+OBJECTIVE:
+
+Build a daily secure partner feed pipeline that reads Gold merchant_performance data, filters records by partner-owned merchant_ids, masks customer_id using SHA256 with partner-specific salt, and generates one Parquet feed file per partner.
+
+
+DATA SOURCES:
+
+Source 1:
+merchant_performance_gold
+Format: Delta Table
+Approx rows/day: 1M
+
+Source 2:
+partner_merchant_mapping
+Format: CSV/Delta
+Approx rows/day: 500
+
+Source 3:
+partner_salt_lookup
+Format: Secure Config Table
+Approx rows/day: 3
+
+Columns:
+transaction_id
+merchant_id
+customer_id
+amount
+payment_method
+txn_timestamp
+merchant_rating
+
+
+BRONZE LAYER:
+
+Columns to ingest:
+
+transaction_id STRING
+merchant_id STRING
+customer_id STRING
+amount DECIMAL(18,2)
+payment_method STRING
+txn_timestamp TIMESTAMP
+merchant_rating DOUBLE
+
+Metadata columns:
+
+ingestion_timestamp = current_timestamp()
+source_file_name = input_file_name()
+run_date = current_date()
+
+Partition Strategy:
+
+PARTITION BY run_date
+
+
+SILVER LAYER:
+
+Exact casts:
+
+amount -> DECIMAL(18,2)
+txn_timestamp -> TIMESTAMP
+merchant_rating -> DOUBLE
+
+Filter conditions:
+
+DROP WHERE merchant_id IS NULL
+DROP WHERE customer_id IS NULL
+DROP WHERE amount <= 0
+
+Dedup key:
+
+transaction_id
+
+Dedup logic:
+
+ROW_NUMBER() OVER (
+PARTITION BY transaction_id
+ORDER BY txn_timestamp DESC
+) = 1
+
+Quality halt threshold:
+
+ABORT pipeline if duplicate_rate > 2%
+ABORT pipeline if null merchant_id > 1%
+
+
+GOLD LAYER:
+
+Output Table:
+
+partner_feed_{partner_id}
+
+Business Rule Formula:
+
+masked_customer_id =
+SHA256(customer_id + partner_specific_salt)
+
+Partner Filter Rule:
+
+merchant_id IN (
+SELECT merchant_id
+FROM partner_merchant_mapping
+WHERE partner_id = current_partner
+)
+
+Output Format:
+
+PARQUET
+
+Final Output Columns:
+
+transaction_id
+merchant_id
+masked_customer_id
+amount
+payment_method
+txn_timestamp
+merchant_rating
+partner_id
+
+
+ERROR HANDLING:
+
+If source file missing:
+
+Raise FileNotFoundError
+Send SNS/Slack alert
+ABORT pipeline immediately
+
+If quality check fails:
+
+Move bad records to quarantine_partner_feed table
+Log failed_run_id in audit table
+DO NOT generate partner feed
+
+If partner mapping missing:
+
+Skip partner generation
+Raise warning alert
+
+
+PERFORMANCE:
+
+Partitioning Strategy:
+
+PARTITION BY run_date
+
+Broadcast Join:
+
+Broadcast partner_merchant_mapping
+because table size < 10MB
+
+Caching:
+
+Cache merchant_performance_gold
+because reused across 3 partner feed generations
+
+File Optimization:
+
+coalesce(1) per partner output file

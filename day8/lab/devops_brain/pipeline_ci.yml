@@ -17,7 +17,7 @@ jobs:
         python-version: [3.10]
 
     steps:
-      # Checkout the repository code to make it available for subsequent steps
+      # Checkout the repository code to run the CI steps
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -36,7 +36,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # Install the required Python dependencies
+      # Install the required Python dependencies for the project
       - name: Install dependencies
         run: pip install duckdb pytest pytest-cov ruff pandas
 

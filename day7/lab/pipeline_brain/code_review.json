@@ -5,98 +5,96 @@
       "name": "IDEMPOTENCY",
       "status": "PASS",
       "finding": "All write operations use overwrite mode.",
-      "fix": "None required."
+      "fix": "None needed."
     },
     {
       "id": 2,
       "name": "ERROR_HANDLING",
-      "status": "FAIL",
-      "finding": "No try/except blocks around pipeline stages.",
-      "fix": "Wrap each pipeline stage in try/except blocks."
+      "status": "PASS",
+      "finding": "Each pipeline stage is wrapped in try/except.",
+      "fix": "None needed."
     },
     {
       "id": 3,
       "name": "PARTITION_PRUNING",
       "status": "PASS",
       "finding": "Read operations are filtered by date/partition column.",
-      "fix": "None required."
+      "fix": "None needed."
     },
     {
       "id": 4,
       "name": "ROW_COUNT_LOGGING",
-      "status": "WARN",
-      "finding": "No row count logging after transformation stages.",
-      "fix": "Add logging for row counts after each transformation stage."
+      "status": "PASS",
+      "finding": "Row count is logged after each transformation stage.",
+      "fix": "None needed."
     },
     {
       "id": 5,
       "name": "BUSINESS_RULES",
       "status": "PASS",
       "finding": "Revenue is calculated as SUM(amount) WHERE status='COMPLETED'.",
-      "fix": "None required."
+      "fix": "None needed."
     },
     {
       "id": 6,
       "name": "NULL_HANDLING",
-      "status": "WARN",
-      "finding": "No NULL checks on primary key and critical columns.",
-      "fix": "Add NULL checks on primary key and critical columns."
+      "status": "PASS",
+      "finding": "NULL checks are present on critical columns.",
+      "fix": "None needed."
     },
     {
       "id": 7,
       "name": "BROADCAST_HINT",
-      "status": "WARN",
-      "finding": "broadcast() is not used on the merchant dimension join.",
-      "fix": "Use broadcast() on the merchant dimension join."
+      "status": "PASS",
+      "finding": "broadcast() is used on the merchant dimension join.",
+      "fix": "None needed."
     },
     {
       "id": 8,
       "name": "HARDCODED_PATHS",
-      "status": "FAIL",
-      "finding": "File paths are hardcoded as strings.",
-      "fix": "Use parameters instead of hardcoded file paths."
+      "status": "PASS",
+      "finding": "File paths are passed as parameters, not hardcoded.",
+      "fix": "None needed."
     },
     {
       "id": 9,
       "name": "SCHEMA_VALIDATION",
       "status": "WARN",
       "finding": "No schema validation before transforming.",
-      "fix": "Add schema validation to check expected columns."
+      "fix": "Add schema validation before transformations."
     },
     {
       "id": 10,
       "name": "DEDUPLICATION",
       "status": "PASS",
       "finding": "Explicit dedup logic on transaction_id is present.",
-      "fix": "None required."
+      "fix": "None needed."
     },
     {
       "id": 11,
       "name": "METADATA_OUTPUT",
       "status": "PASS",
       "finding": "Pipeline writes a run summary JSON at the end.",
-      "fix": "None required."
+      "fix": "None needed."
     },
     {
       "id": 12,
       "name": "IMPORTS",
       "status": "PASS",
       "finding": "All imports are present and specific.",
-      "fix": "None required."
+      "fix": "None needed."
     }
   ],
   "summary": {
-    "pass_count": 6,
-    "fail_count": 2,
-    "warn_count": 4,
+    "pass_count": 11,
+    "fail_count": 0,
+    "warn_count": 1,
     "merge_recommendation": "APPROVE_WITH_CHANGES",
     "top_3_fixes": [
-      "Wrap each pipeline stage in try/except blocks.",
-      "Add logging for row counts after each transformation stage.",
-      "Use parameters instead of hardcoded file paths."
+      "Add schema validation before transformations."
     ]
   },
-  "reviewed_file": "pipeline_brain\\generated_pipeline.py",
-  "reviewed_at": "2026-05-26T11:10:54.020507+00:00",
+  "reviewed_file": "pipeline_brain/generated_pipeline.py",
+  "reviewed_at": "2026-05-26T11:49:52.349023+00:00",
   "model": "amazon.nova-pro-v1:0"
 }

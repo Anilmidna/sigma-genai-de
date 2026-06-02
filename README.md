@@ -19,8 +19,11 @@ cd sigma-genai-de
 # 3. Add trainer's repo as upstream
 git remote add upstream https://github.com/devproacademy/sigma-genai-de.git
 
-# 4. Install base dependencies
-pip install -r setup/requirements.txt
+# 4. Create a virtual environment and install base dependencies
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r setup/requirements.txt
 
 # 5. Pull latest materials (do this every morning)
 git pull upstream main

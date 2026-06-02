@@ -1,0 +1,7 @@
+{
+  "status": "success",
+  "scanned_table": "day2_orders",
+  "failures_detected": 4,
+  "passes_detected": 2,
+  "soda_observability_verified": true
+}

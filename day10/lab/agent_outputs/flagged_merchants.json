@@ -1,0 +1,12 @@
+[
+  {
+    "merchant_id": "M001",
+    "reason": "Transaction count >= 2 and average transaction amount < 1000",
+    "flagged_at": "2026-05-29T16:02:01.262910Z"
+  },
+  {
+    "merchant_id": "M006",
+    "reason": "Transaction count >= 2 and average transaction amount < 1000",
+    "flagged_at": "2026-05-29T16:02:02.676112Z"
+  }
+]

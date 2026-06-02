@@ -8,7 +8,7 @@
         "max_value": 30
       },
       "meta": {
-        "notes": "Ensure the row count is within the expected range after Bronze -> Silver transform."
+        "notes": "Ensure the number of rows in the table is within the expected range after the Bronze -> Silver transformation."
       }
     },
     {
@@ -17,7 +17,7 @@
         "column": "transaction_id"
       },
       "meta": {
-        "notes": "All transaction_ids must be non-null."
+        "notes": "Ensure transaction_id is not null."
       }
     },
     {
@@ -26,7 +26,7 @@
         "column": "amount"
       },
       "meta": {
-        "notes": "All amounts must be non-null."
+        "notes": "Ensure amount is not null."
       }
     },
     {
@@ -35,7 +35,7 @@
         "column": "status"
       },
       "meta": {
-        "notes": "All statuses must be non-null."
+        "notes": "Ensure status is not null."
       }
     },
     {
@@ -44,7 +44,7 @@
         "column": "transaction_date"
       },
       "meta": {
-        "notes": "All transaction dates must be non-null."
+        "notes": "Ensure transaction_date is not null."
       }
     },
     {
@@ -54,7 +54,7 @@
         "min_value": 0
       },
       "meta": {
-        "notes": "All amounts must be greater than or equal to 0."
+        "notes": "Ensure all amounts are greater than or equal to 0."
       }
     },
     {
@@ -63,27 +63,34 @@
         "column": "transaction_id"
       },
       "meta": {
-        "notes": "No duplicate transaction_ids should exist."
+        "notes": "Ensure there are no duplicate transaction_ids."
       }
     },
     {
       "expectation_type": "expect_column_values_to_be_in_set",
       "kwargs": {
         "column": "status",
-        "value_set": ["COMPLETED", "FAILED", "PENDING"]
+        "value_set": [
+          "COMPLETED",
+          "FAILED",
+          "PENDING"
+        ]
       },
       "meta": {
-        "notes": "Status must be one of the allowed values: COMPLETED, FAILED, PENDING."
+        "notes": "Ensure status is one of the allowed values: COMPLETED, FAILED, PENDING."
       }
     },
     {
       "expectation_type": "expect_column_values_to_be_in_set",
       "kwargs": {
         "column": "quality_flag",
-        "value_set": ["CLEAN", "UNMATCHED"]
+        "value_set": [
+          "CLEAN",
+          "UNMATCHED"
+        ]
       },
       "meta": {
-        "notes": "Quality flag must be either CLEAN or UNMATCHED."
+        "notes": "Ensure quality_flag is either CLEAN or UNMATCHED."
       }
     },
     {
@@ -94,7 +101,7 @@
         "max_value": 5000
       },
       "meta": {
-        "notes": "The mean of the amounts should be between 100 and 5000."
+        "notes": "Ensure the mean of the amount column is between 100 and 5000."
       }
     }
   ],

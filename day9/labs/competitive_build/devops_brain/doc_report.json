@@ -1,0 +1,34 @@
+{
+  "sprint": "doc_generator",
+  "generated_at": "2026-05-27T06:53:30.980147+00:00",
+  "source_file": "buggy_pipeline.py",
+  "source_chars": 8663,
+  "source_lines": 258,
+  "models_used": {
+    "annotated_source": "amazon.nova-pro-v1:0",
+    "runbook": "amazon.nova-pro-v1:0",
+    "design_doc": "amazon.nova-lite-v1:0"
+  },
+  "token_usage": {
+    "step1_annotate": {
+      "input": 2486,
+      "output": 2873
+    },
+    "step2_runbook": {
+      "input": 2644,
+      "output": 781
+    },
+    "step3_design": {
+      "input": 2499,
+      "output": 454
+    },
+    "total_input": 7629,
+    "total_output": 4108
+  },
+  "output_files": {
+    "documented_pipeline": "devops_brain/documented_pipeline.py",
+    "runbook": "devops_brain/runbook.md",
+    "design_doc": "devops_brain/design_doc.md"
+  },
+  "student_judgment": "The recovery actions are too generic and lack specific terminal commands, log file paths, and actual on-call paging escalation thresholds."
+}
