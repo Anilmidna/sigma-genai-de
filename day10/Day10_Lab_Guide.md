@@ -24,423 +24,401 @@ All labs use the same database (`sigma_platform.duckdb` — Sigma DataTech Silve
 ---
 
 ## Lab 1 — Build Your Own ReAct Agent From Scratch
+**Total time: ~45 minutes** (Phase A: 15 min + Phase B: 25 min + debrief: 5 min)
 
 ### Mission Brief
 Sigma DataTech's fraud team asks: *"Which 3 merchants had the most suspicious transaction patterns last month — high volume AND unusual amounts?"*
 
 A junior DE would write 3 separate SQL queries and paste results into a doc. You are going to build an AI agent that answers multi-step questions autonomously — using nothing but Python and Bedrock. No LangGraph. No LangChain. **You build the loop yourself.**
 
-This is Lab 1 because the pain you feel building it manually is exactly why frameworks like LangGraph exist.
+This is Lab 1 because the pain of building it manually is exactly why frameworks like LangGraph exist.
 
 ### What You Will Learn
 - The ReAct loop: Thought → Action → Observation → Repeat → Final Answer
 - Why agents need tools (LLMs cannot query databases directly)
 - How to parse structured actions from free-text LLM output
-- Why runaway agents need iteration caps and why hallucination is dangerous
-- The exact problem LangGraph solves — which you build in Lab 2
+- Why runaway agents need iteration caps
+- How to add new tools and why the system prompt matters more than you expect
 
-### Manual-First Exercise (3 minutes — do this BEFORE running any code)
-Close your laptop. On paper, write the steps you would take to answer:
+### Manual-First Exercise (3 minutes — close your laptop)
+On paper, write the steps you would take to answer:
 > *"Which 3 merchants had the most suspicious transaction patterns?"*
 
 - How many SQL queries would you write?
 - What counts as "suspicious"?
-- How do you decide when you have enough information to stop?
+- How do you decide when to stop?
 
-Write it down. Then run the lab and compare your reasoning chain to the agent's.
+Then **predict: how many Thought → Action → Observation cycles** will the agent need?  
+Write your number down. The script will ask you for it before running.
 
 ### Pre-requisites
 - `python tests/validate_day10.py` shows all ✅
-- AWS credentials configured (`~/.aws/credentials` or env vars)
+- AWS credentials configured
 - You are inside `repo/day10/lab/`
 
-### Steps
+---
 
-**Step 1 — Read the file header (2 minutes)**
-Open `1_react_agent.py` and read the docstring at the top. Understand the three tools the agent has: `query_db`, `get_schema`, `calculate`.
+### Phase A — Run the Agent (15 minutes)
 
-**Step 2 — Run the agent**
+**Step 1** — Open `1_react_agent.py`. Read the 3 tool functions: `tool_query_db`, `tool_get_schema`, `tool_calculate`. Understand what each one does in one sentence each.
+
+**Step 2** — Run the agent:
 ```bash
 python 1_react_agent.py
 ```
+The script will ask for your step-count prediction before the agent runs. Enter it.
 
-**Step 3 — Watch the reasoning loop**
-In the terminal you will see each step printed:
-```
---- Step 1 ---
-Thought: I should first look at the database schema...
-Action: get_schema
-Obs: TABLE silver_transactions: transaction_id VARCHAR, ...
+**Step 3** — Watch each Thought → Action → Observation cycle print in the terminal. Count as you go.
 
---- Step 2 ---
-Thought: Now I need to find merchants with high volume...
-Action: query_db
-Input: SELECT merchant_id, COUNT(*) as txn_count ...
-Obs:   merchant_id  txn_count
-       MER_001      4821
-       ...
-```
+**Step 4** — When it finishes, check your prediction against the actual step count. If you were off by more than 1, open `react_trace.json` and find the step that surprised you.
 
-Follow each Thought → Action → Observation cycle. Count how many steps the agent takes.
+**Step 5** — Answer the judgment question the script asks. Your answer is saved.
 
-**Step 4 — Answer the judgment question**
-At the end, the agent asks you one question. Answer honestly — your answer is saved to `agent_outputs/react_trace.json`.
-
-### Validation
-After running, confirm these files exist:
+**Validation:**
 ```bash
 ls agent_outputs/
-# react_trace.json   — full reasoning trace (every Thought/Action/Observation)
+# react_trace.json   — full reasoning trace
 # react_answer.txt   — the agent's final answer
 ```
+Open `react_trace.json`. Confirm `"answer"` contains specific merchant names with numbers.
 
-Open `react_trace.json`. Verify:
-- The `"steps"` count shows how many iterations the agent used
-- The `"answer"` field contains specific merchant names with numbers
-- The `"trace"` array shows every Thought/Action/Observation in sequence
+---
+
+### Phase B — Build Task: Add a 4th Tool (25 minutes, mandatory)
+
+**This is not optional. You do not move to Lab 2 until your `flagged_merchants.json` exists.**
+
+The agent currently has 3 tools: `query_db`, `get_schema`, `calculate`. You will add a 4th: `flag_merchant`.
+
+Open `1_react_agent.py` and scroll to the `student_build_task()` function at the bottom. Follow Steps 1–5 in the comments:
+
+1. **Implement `tool_flag_merchant`** — parse `merchant_id` and `reason` from the input string, append to `agent_outputs/flagged_merchants.json`, return a confirmation string
+2. **Register it in `TOOLS`** — one line: `TOOLS["flag_merchant"] = tool_flag_merchant`
+3. **Add its description to `TOOL_DESCRIPTIONS`** — this is the most important step. Without it the agent never knows the tool exists
+4. **Uncomment the flag_question block** and re-run
+5. **Verify** — `flagged_merchants.json` must exist with at least 1 entry. `react_trace.json` must show `Action: flag_merchant` at least once
+
+**Success criterion:** Open `react_trace.json`. Find the `"Thought"` that immediately preceded `Action: flag_merchant`. Read it. That is the agent's reasoning chain for choosing your tool. Answer: does it make sense?
+
+**Show this to the trainer before Lab 2.**
+
+---
 
 ### Debrief
-**What just happened:** You built a complete AI reasoning loop — the agent decided its own next step at every iteration, called real tools, and stopped when it had enough information. No framework managed this for you.
+**What just happened:** You built the full loop AND extended it. Adding a tool required: write a function + 2 lines of registration. That contract is identical in LangChain, LangGraph, and Bedrock Agents — just with decorators.
 
-**What the agent got right:** It discovered the schema before writing SQL. It correctly interpreted numeric results and ranked merchants.
+**What the agent got right:** Schema discovery before SQL. Numeric ranking. Tool selection based on task context.
 
-**What to watch for:** If the agent generates SQL with a wrong column name, it gets a SQL error back as an Observation and must self-correct. This retry logic is fragile — there's no structured way to ensure it improves. Lab 2 fixes this.
+**What to watch for:** The agent decided when to call `flag_merchant` based solely on what you wrote in `TOOL_DESCRIPTIONS`. Change that description and the agent's behaviour changes — with no code change. This is prompt engineering at the tool level.
 
-**The rule:** An agent is worth the complexity when the query space is too large or dynamic to hardcode SQL — not for simple 2-query reports.
+**The rule:** An agent is worth the complexity when the query space is too large or dynamic to hardcode SQL. For a 2-query report, just write the SQL.
 
-**Where this fits:** Lab 2 rebuilds this agent properly using LangGraph — with state, memory, structured retry, and conditional routing.
-
-### Bonus Challenge
-Modify `1_react_agent.py` to ask a different question:
-> *"What was the total transaction value for each payment method category in the last 7 days?"*
-
-Change the `question` variable in `main()` and re-run. Observe how the agent adapts its tool calls without any code change.
+**Where this fits:** Lab 2 rebuilds this with LangGraph — adding typed state, structured retry, memory, and Snowflake connectivity.
 
 ---
 
 ## Lab 2 — LangGraph SQL Agent with Memory
+**Total time: ~50 minutes** (Phase A: 20 min + Phase B: 25 min + debrief: 5 min)
 
 ### Mission Brief
 Your Lab 1 agent works — but it has no memory, no structured retry, and no way to prevent bad SQL from reaching the database. Sigma DataTech's production team has rejected it.
 
-You will rebuild the same agent in LangGraph: a directed graph where three specialized agent nodes — Generator, Reviewer, Executor — pass state to each other. If the Reviewer rejects the SQL, the graph routes back to the Generator — up to 3 times — before forcing execution. Every approved query is saved to SQLite so the next run starts with context.
+You will run a LangGraph solution — 3 nodes, typed state, conditional routing, SQLite memory — and then **build your own 2-node LangGraph from scratch** to prove you understand the 3 building blocks, not just watched them run.
 
 ### What You Will Learn
-- LangGraph's StateGraph: nodes, edges, and conditional routing
-- How a TypedDict state object flows between agent nodes
-- How to implement a generate → review → fix loop with a round cap
-- SQLite-backed agent memory that persists across runs
-- How to swap DuckDB for Snowflake in one line without touching agent logic
+- LangGraph StateGraph: nodes, edges, conditional routing
+- TypedDict state — the only way data moves between nodes
+- Conditional edges — routing decisions based on state, not code flow
+- SQLite-backed memory that persists across runs
+- Snowflake swap pattern — one-line DB switch
 
 ### Manual-First Exercise (3 minutes)
 You are the SQL Reviewer. Read this query:
-
 ```sql
-UPDATE silver_transactions
-SET amount = ABS(amount)
+SELECT * FROM silver_transactions
 ```
-
-Write down: What is wrong with this query? What would you say to the engineer who wrote it? Then watch what the SQL Reviewer agent says about similar queries.
+Write down 3 specific things wrong with it from a production data engineering perspective. Then watch what the SQL Reviewer agent finds.
 
 ### Pre-requisites
-- Lab 1 complete (agent_outputs/ exists)
+- Lab 1 Build Task complete (`flagged_merchants.json` exists)
 - `python tests/validate_day10.py` shows all ✅
 
-### Steps
+---
 
-**Step 1 — Read the agent design**
-Open `2_langgraph_sql_agent.py`. Find and read:
-- `SQLAgentState` — the TypedDict that all nodes share
-- `sql_generator_node`, `sql_reviewer_node`, `sql_executor_node` — three node functions
-- `route_after_review()` — the conditional edge that decides: retry or proceed
-- `AgentMemory` class — SQLite-backed memory
+### Phase A — Run the Agent (20 minutes)
 
-**Step 2 — Run the agent (first time)**
+**Step 1** — Open `2_langgraph_sql_agent.py`. Read these 4 things:
+- `SQLAgentState` TypedDict — every field shared between nodes
+- `route_after_review()` function — this is the conditional edge, not a node
+- `build_graph()` — note how `add_conditional_edges` differs from `add_edge`
+- The Snowflake swap comment in `sql_executor_node` — 4 lines, no agent logic changes
+
+**Step 2** — Run it:
 ```bash
 python 2_langgraph_sql_agent.py
 ```
+Watch for `[Agent 2 — SQL Reviewer] ❌ REJECTED` — if it appears, the generator gets feedback and rewrites the SQL. That retry is the graph routing back automatically.
 
-You will see the graph execute in sequence. Watch for the reviewer's feedback appearing in the generator's second attempt.
-
-**Step 3 — Run it again immediately**
+**Step 3** — Run it a second time immediately:
 ```bash
 python 2_langgraph_sql_agent.py
 ```
+The generator now says "MEMORY — PAST QUERIES: ..." in its prompt. Same agent, smarter start, zero code change.
 
-On the second run, notice: the generator's first Thought now references past approved queries from memory. The agent started smarter — zero code change.
-
-**Step 4 — Inspect the SQLite memory**
+**Step 4** — Inspect SQLite memory:
 ```bash
 python3 -c "
 import sqlite3
 conn = sqlite3.connect('agent_memory.db')
-print('== Approved Queries ==')
-for row in conn.execute('SELECT question, sql_query, created_at FROM query_history LIMIT 5').fetchall():
+for row in conn.execute('SELECT question, review_rounds, timestamp FROM query_history').fetchall():
     print(row)
 conn.close()
 "
 ```
 
-**Step 5 — Answer the judgment question**
-The script asks you one question at the end. Answer it.
-
-### Validation
-Confirm these files exist:
+**Validation:**
 ```bash
 ls agent_outputs/
-# langgraph_trace.json   — full graph execution with node inputs/outputs
-# approved_queries.json  — only SQL that passed review
+# langgraph_trace.json   — full graph execution
+# approved_queries.json  — SQL that passed review
+```
+Confirm `"approved": true` and `"execution_result"` has data in `langgraph_trace.json`.
+
+---
+
+### Phase B — Build Task: Your Own 2-Node LangGraph (25 minutes, mandatory)
+
+**You do not move to Lab 3 until both test cases pass.**
+
+Open `2_langgraph_sql_agent.py`, scroll to `student_build_task()` at the bottom. Build a 2-node SQL safety graph from scratch.
+
+**What you are building:**
+```
+NL query → sql_checker_node → (safe?) → safe_executor_node → result
+                              (unsafe) → safe_executor_node → "BLOCKED: ..."
 ```
 
-Open `langgraph_trace.json`. Check:
-- `"review_rounds"` shows how many times the reviewer ran
-- `"approved": true` in the final state
-- `"execution_result"` contains actual data from DuckDB
+**Steps in the code:**
+1. **Define `CheckerState`** — TypedDict with `sql`, `is_safe`, `check_reason`, `result`
+2. **Write `sql_checker_node`** — no LLM needed, just check if `"WHERE"` is in the SQL string
+3. **Write `safe_executor_node`** — run via DuckDB if safe, return blocked message if not
+4. **Write `route_by_safety`** — returns `"execute"` or `"blocked"` (string, not bool)
+5. **Wire the graph** — StateGraph → add_node × 3 → set_entry_point → add_conditional_edges → add_edge × 2 → compile
+6. **Uncomment Step 6** — test with a safe SQL and an unsafe SQL
+
+**Success criterion:** Safe SQL returns actual data. Unsafe SQL returns `"BLOCKED: ..."`. Both must work. Show the trainer.
+
+**The 3 concepts you just used:** TypedDict state + node functions + conditional edges. That is all of LangGraph. Everything else is just more of these 3.
+
+---
 
 ### Debrief
-**What just happened:** The LangGraph StateGraph managed all state transitions for you. The Reviewer's feedback flowed into the Generator's next attempt automatically via shared state.
+**What just happened:** You didn't just watch a graph run — you built one. The checker graph is minimal but it is a real LangGraph. Scale it up with Bedrock calls, more nodes, more routing conditions and you have the full Lab 2 agent.
 
-**What the agent got right:** It rejected SQL missing WHERE clauses. It improved on the second attempt using reviewer feedback. Memory made the second run faster.
+**What the agent got right:** Typed state prevented bugs. Conditional routing made retry logic explicit. Memory made repeated questions cheaper.
 
-**What to watch for:** The reviewer sometimes flags valid SQL as risky (false positives). After 3 rounds it runs anyway — which is intentional but means unsafe SQL can still reach the database if the reviewer is too strict. In production, add a human-approval node for `DELETE` and `UPDATE`.
+**What to watch for:** The reviewer can false-positive on valid SQL (marks it REJECTED when it is fine). After 3 rounds it forces execution anyway — unsafe SQL can still reach the DB. For financial data, add a human-approval node before any UPDATE or DELETE.
 
-**The rule:** LangGraph for when you need precise control over retries, routing, and state — not when you just want agents to talk to each other.
+**The rule:** LangGraph when you need precise control over state flow and retry. CrewAI (Lab 3) when the workflow maps to human roles and you want less boilerplate.
 
-**Where this fits:** Lab 3 uses CrewAI for the same data quality problem — role-based instead of graph-based. You will pick which approach fits which scenario.
-
-### Bonus Challenge
-Add a fourth node: `sql_optimizer_node`. After SQL is approved, have it rewrite the query for performance (add LIMIT, suggest indexes). Insert it between reviewer and executor in the graph.
-
-```python
-# Hint: add to the graph
-workflow.add_node("optimize", sql_optimizer_node)
-workflow.add_edge("review", "optimize")
-workflow.add_edge("optimize", "execute")
-```
+**Where this fits:** Lab 3 solves the same problem with CrewAI — different mental model, compare both.
 
 ---
 
 ## Lab 3 — CrewAI Data Quality Crew
+**Total time: ~50 minutes** (Phase A: 20 min + Phase B: 25 min + debrief: 5 min)
 
 ### Mission Brief
-Sigma DataTech's Monday morning data quality report takes a senior DE 3 hours: pull Silver table stats, identify issues, write fix queries, get them reviewed. You will replace that workflow with a 3-agent CrewAI crew where each agent has a defined role, goal, and backstory — and they hand work to each other automatically.
-
-| Agent | Role | Model |
-|-------|------|-------|
-| Data Scout | Finds all data quality issues | Nova Pro |
-| SQL Surgeon | Writes fix queries for each issue | Nova Pro |
-| Quality Guardian | Reviews every fix before production | Nova Lite |
+Sigma DataTech's Monday morning data quality report takes a senior DE 3 hours: pull Silver table stats, identify issues, write fix queries, get them reviewed. You will run a 3-agent CrewAI crew that automates this — then **add a 4th agent yourself**.
 
 ### What You Will Learn
-- CrewAI Agent: how `role`, `goal`, and `backstory` shape LLM behaviour
-- CrewAI Task: how `context=[previous_task]` passes output between agents
-- Sequential vs hierarchical process — when each makes sense
-- How to assign different models to different agents based on task complexity
-- When CrewAI is a better choice than LangGraph
+- CrewAI Agent: how `role`, `goal`, and `backstory` drive LLM behaviour
+- CrewAI Task: how `context=[previous_task]` wires agent output to agent input
+- Why backstory matters more than you expect — changing 2 sentences changes the output
+- Sequential vs hierarchical process — when each applies
+- How CrewAI's people-first model differs from LangGraph's graph-first model
 
 ### Manual-First Exercise (2 minutes)
-You are the Data Scout. Open a Python terminal and run ONE query against the Silver table that would reveal the most important data quality issue:
-
+You are the Data Scout. Run ONE SQL query that reveals the most important data quality issue in the Silver table:
 ```bash
 python3 -c "
 import duckdb
 conn = duckdb.connect('sigma_platform.duckdb', read_only=True)
-print(conn.execute('SHOW TABLES').fetchall())
-# Write your quality check query here
+# Write your quality check query here — try: nulls, negatives, duplicates
 conn.close()
 "
 ```
-
-Write down: what issue did you find? What SQL would fix it? Then watch Agent 1 do the same.
+Write down: what issue did you find? What severity? Then compare to what Agent 1 reports.
 
 ### Pre-requisites
-- Lab 2 complete
+- Lab 2 Build Task complete (both test cases passed)
 - `python tests/validate_day10.py` shows all ✅
-- Note: this lab runs 3 agents × multiple Bedrock calls. Expect 3–6 minutes to complete.
+- This lab makes multiple Bedrock calls — expect 3–6 minutes to complete
 
-### Steps
+---
 
-**Step 1 — Read the three agent definitions**
-Open `3_crewai_de_team.py`. Find `data_scout`, `sql_surgeon`, `quality_guardian`. For each, read the `backstory`. Notice how the Quality Guardian's backstory is entirely about past incidents and risk — this shapes every response it generates.
+### Phase A — Run the Crew (20 minutes)
 
-**Step 2 — Run the crew**
+**Step 1** — Open `3_crewai_de_team.py`. For each of the 3 agents, read only the `backstory`. Notice: the SQL Surgeon's backstory says "never without WHERE clauses" — one sentence that changes every query it generates. The Quality Guardian's backstory lists 5 past incidents.
+
+**Step 2** — Run the crew:
 ```bash
 python 3_crewai_de_team.py
 ```
+It will take 3–6 minutes. Watch each agent's output as it completes.
 
-The terminal will show each agent's verbose output. Let it run to completion — do not interrupt.
-
-**Step 3 — Read the outputs**
+**Step 3** — Compare the Scout's findings to your manual query:
 ```bash
-# Full quality report with all three agents' outputs
 cat agent_outputs/crewai_dq_report.json
-
-# SQL fix queries extracted from the crew output
 cat agent_outputs/crewai_fix_queries.sql
 ```
+Did the Scout find the same issue you found? Did it find more? Did it miss yours?
 
-**Step 4 — Compare to your manual query**
-Go back to what you wrote in the Manual-First exercise. Did the Data Scout find the same issue? Did it find more?
+**Step 4** — Read `crewai_fix_queries.sql`. Check that every UPDATE has a WHERE clause. If any does not, that is the Surgeon failing its own backstory.
 
-**Step 5 — Answer the judgment question**
-The script asks: LangGraph or CrewAI for a nightly production pipeline? Answer with a reason.
+**Step 5** — Answer the judgment question (LangGraph vs CrewAI for a nightly pipeline).
 
-### Validation
-Confirm these files exist:
+**Validation:**
 ```bash
 ls agent_outputs/
-# crewai_dq_report.json   — full crew output including per-agent results
-# crewai_fix_queries.sql  — extracted SQL fix statements
+# crewai_dq_report.json   — full 3-agent output
+# crewai_fix_queries.sql  — SQL with comments and rollback plans
 ```
 
-Open `crewai_fix_queries.sql`. Check:
-- Each fix has a `-- FIX:` comment explaining what it fixes
-- Each high-risk fix has a `-- ROLLBACK:` strategy
-- No bare UPDATE statements without WHERE clauses
+---
+
+### Phase B — Build Task: Add the 4th Agent (25 minutes, mandatory)
+
+**You do not finish Lab 3 until `slack_notification.txt` exists.**
+
+The 3-agent crew ends with a 500-word Guardian report. Nobody reads that on a Monday morning. Add a 4th agent — the Incident Reporter — who distils it into a 6-line Slack message.
+
+Open `3_crewai_de_team.py`, scroll to `student_build_task()`. Follow Steps 1–5:
+
+1. **Define `incident_reporter`** — write the `role`, `goal`, and `backstory` yourself. The backstory should make this agent ruthlessly concise — someone who was reprimanded once for writing a long report. This is not a cosmetic exercise: your backstory will change the output.
+2. **Define `task_reporter`** — description specifies the 6-line Slack format exactly. `context=[task_guardian]` is the one line that connects this agent to the crew's findings.
+3. **Create `full_crew`** with all 4 agents + 4 tasks
+4. **Uncomment the run block** and execute
+5. **Verify** `slack_notification.txt` contains the `*SIGMA DATATECH DATA QUALITY ALERT*` header and a severity indicator
+
+**Success criterion:** Show the trainer the Slack message. It must be 6 lines. If it is longer, your backstory is not doing its job — rewrite it and re-run.
+
+**Reflection questions (answer at debrief):**
+- Which of `role`, `goal`, `backstory` had the most effect on the output?
+- For a nightly production pipeline: LangGraph or CrewAI? Why?
+
+---
 
 ### Debrief
-**What just happened:** Three agents with distinct personalities worked sequentially. The Guardian's verdict was shaped entirely by its backstory — "last line of defence, has seen 5 production incidents." Change the backstory and the verdict changes.
+**What just happened:** You didn't just add code — you hired a new agent by describing who they are and what they fear. That is the CrewAI mental model: people, not nodes.
 
-**What the agent got right:** The Scout systematically checked nulls, negatives, duplicates, and outliers. The Surgeon wrote idempotent fixes. The Guardian caught missing WHERE clauses.
+**What the agent got right:** Context passing (`context=[task_guardian]`) made the reporter's output grounded in real findings, not hallucinated DQ scores.
 
-**What to watch for:** The Surgeon sometimes writes fixes that are syntactically correct but violate business rules (e.g., treating refund transactions — which have negative amounts — as data errors). Always review with domain knowledge.
+**What to watch for:** The Surgeon sometimes marks refunds (negative amounts) as data errors — they are legitimate business transactions. Domain knowledge is not replaceable by backstory.
 
-**The rule:** CrewAI when the workflow maps naturally to human roles and the team structure is stable. LangGraph when you need precise control over retry logic and routing.
+**The rule:** CrewAI for stable role-based workflows. LangGraph for dynamic routing with retry loops. Neither replaces a human DQ review for financial data.
 
-**Where this fits:** Tomorrow (Day 11) you will add LLM observability to track how much these Bedrock calls cost per run and set up cost alerts.
-
-### Bonus Challenge
-Add a fourth agent: **Report Writer**. Its job is to take the Quality Guardian's verdict and produce a 5-bullet executive summary suitable for the CTO. Add it after the guardian with `context=[task_scout, task_surgeon, task_guardian]`.
+**Where this fits:** Day 11 adds LLM observability — you will see exactly what these 4-agent runs cost in Bedrock tokens and set up cost alerts.
 
 ---
 
 ## Lab 4 ★ — Self-Healing Pipeline Agent (Stretch Goal)
+**Total time: ~45 minutes** (Phase A: 20 min + Phase B: 20 min + debrief: 5 min)
 
-*Only attempt this after completing Labs 1–3.*
+*Attempt after completing Labs 1–3. If time is short, do Phase A only and come back to Phase B.*
 
 ### Mission Brief
-It is 2 AM. A Sigma DataTech pipeline crashes in production. Instead of paging an on-call DE, your self-healing agent catches the failure, reads the error, asks Bedrock to patch the code, re-runs it, and saves the fix to persistent memory — so the next time the same error occurs, it costs zero Bedrock calls to fix.
-
-This is a production pattern used at Databricks Lakehouse Monitoring, AWS Step Functions, and Astronomer.
+It is 2 AM. A Sigma DataTech pipeline crashes in production. Instead of paging an on-call DE, your self-healing agent catches the failure, reads the error, asks Bedrock to patch the code, re-runs it, and saves the fix to SQLite — so the next time the same error occurs, it costs zero Bedrock calls.
 
 ### What You Will Learn
-- Error fingerprinting: identifying recurring failures by error signature
+- Error fingerprinting: identify recurring failures by error signature, not full text
 - Safe code execution: subprocess runner with timeout and crash isolation
-- Memory-informed repair: agent consults past fixes before calling LLM
-- Cache-driven cost savings: second run with same bug = zero LLM calls
-- How to escalate to humans when auto-repair is exhausted
+- Memory-informed repair: agent consults cache before every LLM call
+- The critical distinction: Python runtime errors (fixable) vs logic bugs (silent, dangerous)
 
 ### Manual-First Exercise (3 minutes)
-The broken pipeline is printed at the top of `4_stretch_goal_agent_memory.py` in the `BROKEN_PIPELINE` variable. Read it. Find all three bugs. Write them on paper.
+Open `4_stretch_goal_agent_memory.py`. The `BROKEN_PIPELINE` variable contains intentionally broken code. Read it carefully.
 
-Then run the lab and watch whether the agent finds the same bugs — and whether it catches all three.
+**The script says "at least 3 bugs."** Find as many as you can. Write them on paper with line numbers and exact bug descriptions. Then run the lab and check if the agent found the same ones — and whether it found one you missed.
 
 ### Pre-requisites
 - Labs 1, 2, and 3 complete
 - `python tests/validate_day10.py` shows all ✅
 
-### Steps
+---
 
-**Step 1 — Run the agent (first time)**
+### Phase A — Run the Healer (20 minutes)
+
+**Step 1** — Run the agent (first time):
 ```bash
 python 4_stretch_goal_agent_memory.py
 ```
+Watch: each attempt prints the error, whether it hit cache or called Bedrock, and the diagnosis. Count how many LLM calls it made.
 
-Watch the output:
-```
-ATTEMPT 1/4 — Running pipeline...
-❌ Failed. Error: KeyError: 'amounts'
-[AI] No cached fix. Calling Bedrock to diagnose...
-[AI] Diagnosis: Column name 'amounts' does not exist; correct name is 'amount'
-
-ATTEMPT 2/4 — Running pipeline...
-❌ Failed. Error: OperationalError: ...
-[AI] No cached fix. Calling Bedrock to diagnose...
-
-ATTEMPT 3/4 — Running pipeline...
-✅ Pipeline succeeded on attempt 3!
-```
-
-**Step 2 — Run it again immediately (same broken pipeline)**
+**Step 2** — Run it again immediately:
 ```bash
 python 4_stretch_goal_agent_memory.py
 ```
+Watch for `[MEMORY] Known fix found! Applying from memory (no LLM call needed).` — second run should cost zero Bedrock calls for known errors.
 
-This time watch for:
-```
-[MEMORY] Known fix found! Applying from memory (no LLM call needed).
-ATTEMPT 1/4 — Running pipeline...
-✅ Pipeline succeeded on attempt 1!
-```
-
-**Zero Bedrock calls on the second run.** The fix was served from SQLite cache.
-
-**Step 3 — Inspect the healing log**
+**Step 3** — Inspect outputs:
 ```bash
 cat agent_outputs/healing_log.json
-```
+# total_attempts, from_memory flags, final_status
 
-Check:
-- `"total_attempts"` — how many runs it took to fix
-- `"healing_log"` array — each attempt with error, diagnosis, and whether it came from memory
-- `"final_status": "success"`
-
-**Step 4 — Inspect the patched pipeline**
-```bash
 cat agent_outputs/patched_pipeline.py
+# compare to BROKEN_PIPELINE — confirm all bugs are fixed
 ```
 
-Compare it to the `BROKEN_PIPELINE` string in the script. Confirm all three bugs are fixed.
-
-**Step 5 — Check memory database**
+**Step 4** — Check the memory cache:
 ```bash
 python3 -c "
 import sqlite3
 conn = sqlite3.connect('agent_memory.db')
-print('== Healing History ==')
-for row in conn.execute('SELECT error_fingerprint, error_message, success FROM healing_history').fetchall():
-    print(f'  fp={row[0]}, success={bool(row[2])}, error={row[1][:60]}')
+for fp, err, ok, ts in conn.execute('SELECT error_fingerprint, substr(error_message,1,60), success, created_at FROM healing_history ORDER BY id DESC LIMIT 8').fetchall():
+    print(f'{'✅' if ok else '❌'}  {ts[:16]}  fp={fp}  {err}...')
 conn.close()
 "
 ```
 
-**Step 6 — Answer the judgment question**
-The script asks about the biggest risk of auto-patching code in production. Answer honestly.
+**Step 5** — Answer the judgment question about the biggest risk of auto-patching in production.
 
-### Validation
-Confirm these files exist:
-```bash
-ls agent_outputs/
-# healing_log.json     — full repair history with timestamps and attempt count
-# patched_pipeline.py  — the fixed code the agent produced
-```
+**Validation:**
+- `healing_log.json` exists, `"final_status": "success"`
+- `patched_pipeline.py` exists and contains the fixed code
+- Second run shows `"from_memory": true` in the log
+- Confirm how many bugs the agent found — was it 3 or 4?
 
-Confirm `agent_memory.db` contains entries in the `healing_history` table (Step 5 above).
+---
 
-On the SECOND run, confirm `"from_memory": true` appears in the healing log.
+### Phase B — Build Task: Test the Healer's Limits (20 minutes)
+
+**The core hypothesis to test:** Self-healing agents fix Python runtime errors (traceback = clear signal). They cannot fix silent logic bugs (code runs, answer is wrong, no exception raised).
+
+Open `4_stretch_goal_agent_memory.py`, scroll to `student_build_task()`. Steps 1–5:
+
+1. **Write `BROKEN_PIPELINE_V2`** — a multi-line string with your own broken pipeline using the Sigma DataTech schema. Must include: 2 Python runtime bugs AND 1 SQL logic bug that produces wrong results but no exception (e.g., wrong filter before a GROUP BY, missing NULL exclusion, incorrect date range)
+2. **Run the healer against your pipeline** — uncomment the Step 2 block
+3. **Inspect `healing_log_v2.json`** — which bugs did it catch?
+4. **Run it a second time** — how many LLM calls this time? Explain why.
+5. **Answer the reflection questions** — which bug did it miss, and how would you catch it in production?
+
+**The expected finding:** The healer fixes your Python bugs. It declares success even though the logic bug remains. That is the lesson. The question to answer: how do you catch the logic bug if the healer can't?
+
+**Show the trainer:** `healing_log_v2.json` + your answer to "what did the agent miss and how would you catch it in production?"
+
+---
 
 ### Debrief
-**What just happened:** The agent used an error fingerprint (MD5 of last 3 error lines) to check SQLite before every Bedrock call. On the first run it paid for 2–3 LLM diagnoses. On the second run it paid for zero.
+**What just happened:** The healer used MD5 fingerprinting on the last 3 error lines. Same error class + same call location = same fingerprint = cache hit. First run: paid for LLM calls. Second run: zero cost.
 
-**What the agent got right:** It isolated crashes in a subprocess so the healing agent itself never crashed. It fingerprinted errors to avoid duplicate diagnoses. It escalated cleanly when `MAX_HEAL_ATTEMPTS` was reached.
+**What the agent got right:** Subprocess isolation — when the broken pipeline crashes, the healer never crashes. Clean escalation when `MAX_HEAL_ATTEMPTS` is hit.
 
-**What to watch for:** The agent can produce a plausible-looking fix that passes the test pipeline but still has logic errors. Auto-patching production databases without a human review gate is dangerous — always add an approval step for anything that touches financial data.
+**What to watch for:** The agent produced a plausible-looking fix for your logic bug — the code runs, the output looks reasonable, but the numbers are wrong. That is the most dangerous failure mode in production AI pipelines. Silent wrong data is worse than a crash.
 
-**The rule:** Self-healing is a cost and reliability win for infrastructure failures (bad connections, transient errors, wrong column names). It is NOT a substitute for proper code review before deployment.
+**The rule:** Self-healing is a reliability win for infrastructure failures. It is NOT a substitute for data quality checks, unit tests, and human review for anything that touches financial aggregations.
 
-**Where this fits:** Day 11 adds LLM observability — you will track exactly how many Bedrock calls each lab made and what they cost, making the cache savings visible in a dashboard.
-
-### Bonus Challenge
-Make the healing agent post to Slack when it escalates (after `MAX_HEAL_ATTEMPTS`). Replace the `print("Escalating")` line with a real HTTP POST to a Slack webhook:
-
-```python
-import urllib.request, json
-def notify_slack(error: str):
-    url = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
-    payload = json.dumps({"text": f":red_circle: Pipeline auto-repair failed.\nError: {error[:200]}"})
-    req = urllib.request.Request(url, data=payload.encode(), headers={"Content-Type": "application/json"})
-    urllib.request.urlopen(req)
-```
+**Where this fits:** Day 11 adds LLM observability — you will see exactly how many Bedrock calls Labs 1–4 made and what they cost, and make the cache savings visible in a dashboard.
 
 ---
 

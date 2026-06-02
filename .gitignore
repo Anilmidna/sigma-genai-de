@@ -29,7 +29,6 @@ desktop.ini
 *.duckdb.wal
 
 # Large generated files
-*.pptx
 *.xlsx
 *.docx
 ~$*
@@ -45,4 +44,4 @@ desktop.ini
 node_modules/
 
 .vercel
-.env*
+

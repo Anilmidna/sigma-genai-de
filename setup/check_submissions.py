@@ -13,6 +13,9 @@ from datetime import datetime
 
 TRAINER_REPO = "Anilmidna/sigma-genai-de"
 
+# GitHub accounts to exclude (non-students, test forks, unknown accounts)
+EXCLUDED_ACCOUNTS = set()
+
 # Expected output files per day (add new days as you go)
 EXPECTED_FILES = {
     6: {
@@ -39,6 +42,13 @@ EXPECTED_FILES = {
         "output/competitive_scorecard.json": "CompBuild",
         "output/llm_observability_success.json": "LLM-Obs",
         "output/openmetadatalab.json": "OpenMeta",
+    },
+    10: {
+        "agent_outputs/react_trace.json": "ReAct Trace",
+        "agent_outputs/flagged_merchants.json": "Flagged",
+        "agent_outputs/langgraph_trace.json": "LangGraph",
+        "agent_outputs/crewai_dq_report.json": "CrewAI",
+        "agent_outputs/healing_log.json": "SelfHeal",
     },
 }
 
@@ -86,6 +96,25 @@ def check_file_exists(owner, repo_name, filepath):
     return result.returncode == 0
 
 
+def get_file_json(owner, repo_name, filepath):
+    """Fetch and decode JSON file content from a student's fork."""
+    result = subprocess.run(
+        ["gh", "api", f"repos/{owner}/{repo_name}/contents/{filepath}"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        data = json.loads(result.stdout)
+        if "content" in data and data.get("encoding") == "base64":
+            import base64
+            decoded = base64.b64decode(data["content"]).decode("utf-8", errors="replace")
+            return json.loads(decoded)
+    except Exception:
+        pass
+    return None
+
+
 def check_submissions(day_num):
     """Check all students' submissions for a given day."""
     if day_num not in EXPECTED_FILES or not EXPECTED_FILES[day_num]:
@@ -111,15 +140,38 @@ def check_submissions(day_num):
 
     for fork in forks:
         owner = fork["owner"]["login"]
+        if owner in EXCLUDED_ACCOUNTS:
+            continue
         repo_name = fork["name"]
-        pushed_at = fork.get("pushed_at", "")[:10]
 
         # Check each expected file
         file_results = {}
+        responses = {}
         for filename, label in expected.items():
             full_path = lab_prefix + filename
-            exists = check_file_exists(owner, repo_name, full_path)
-            file_results[filename] = exists
+            
+            # For Day 10, fetch JSON trace files to get answers directly
+            if day_num == 10 and filename.endswith(".json") and "flagged" not in filename:
+                json_data = get_file_json(owner, repo_name, full_path)
+                exists = json_data is not None
+                file_results[filename] = exists
+                if exists:
+                    # json_data may be a list (array output) or dict — normalise to dict
+                    d = json_data[0] if isinstance(json_data, list) and json_data else json_data
+                    if not isinstance(d, dict):
+                        d = {}
+                    if "react_trace" in filename:
+                        responses["Lab 1 (Agent Worth)"] = d.get("student_judgment")
+                        responses["Lab 1 (Tool Trigger)"] = d.get("trigger_reasoning")
+                    elif "langgraph_trace" in filename:
+                        responses["Lab 2 (Reviewer Catch)"] = d.get("student_judgment")
+                    elif "crewai_dq_report" in filename:
+                        responses["Lab 3 (Prod Choice)"] = d.get("student_judgment")
+                    elif "healing_log" in filename:
+                        responses["Lab 4 (Self-Heal)"] = d.get("student_judgment")
+            else:
+                exists = check_file_exists(owner, repo_name, full_path)
+                file_results[filename] = exists
 
         # Determine status
         found_count = sum(1 for v in file_results.values() if v)
@@ -144,6 +196,10 @@ def check_submissions(day_num):
             submitted += 1
 
         print(f"  {status} {owner:<20} — {detail}")
+        if responses:
+            for k, v in responses.items():
+                if v and v != "NOT ANSWERED":
+                    print(f"     \033[90m└─ {k}: \"{v}\"\033[0m")
 
     print("─" * 70)
     print(f"  TOTAL: {total} | SUBMITTED: {submitted} | COMPLETE: {complete} | MISSING: {total - submitted}")
