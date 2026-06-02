@@ -8,15 +8,34 @@ Second run: the incident report from today's session is indexed.
 """
 
 import argparse, boto3, json, os, sys
+from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
 REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
 KB_ID  = os.getenv("KNOWLEDGE_BASE_ID", "")
 
-if not KB_ID:
-    print("Set KNOWLEDGE_BASE_ID in .env (get from Anil)")
-    sys.exit(1)
+if not KB_ID or KB_ID.upper() in ("LOCAL", "LOCAL_OLLAMA", ""):
+    print("Knowledge Base is running locally (no AWS cost).")
+    print("Demonstrating RAG concept with local documents instead.\n")
+    import glob
+    docs_dir = Path(__file__).parent.parent / "knowledge_base"
+    docs     = list(docs_dir.rglob("*.md"))
+    query    = sys.argv[sys.argv.index("--query") + 1] if "--query" in sys.argv else "Lambda deployment caused Snowflake schema mismatch"
+    print(f"Query: {query}\n")
+    for doc in docs:
+        content = doc.read_text()
+        # Simple keyword match (local RAG substitute)
+        keywords = [w.lower() for w in query.split() if len(w) > 4]
+        score    = sum(1 for kw in keywords if kw in content.lower())
+        if score > 0:
+            snippet = content[:300].replace("\n", " ")
+            print(f"  [{score} matches] {doc.name}")
+            print(f"  {snippet}...\n")
+    print("This is what a real Knowledge Base retrieval looks like —")
+    print("except Bedrock uses vector embeddings instead of keyword search.")
+    print("The Forensics Agent retrieves context like this before calling CloudWatch.")
+    sys.exit(0)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--query", default="Lambda deployment caused Snowflake schema mismatch")

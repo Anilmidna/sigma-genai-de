@@ -65,19 +65,15 @@ TOOLS = {
         "lambda": "sigma-tool-create-alarm",
         "description": "Create a CloudWatch metric alarm in the current AWS account.",
         "parameters": {
-            "alarm_name": {"description": "CloudWatch alarm name", "required": True, "type": "string"},
-            "description": {"description": "What the alarm detects", "required": True, "type": "string"},
-            "metric_name": {"description": "CloudWatch metric name", "required": True, "type": "string"},
-            "namespace": {"description": "CloudWatch namespace", "required": True, "type": "string"},
-            "threshold": {"description": "Numeric threshold value", "required": True, "type": "number"},
-            "comparison_operator": {"description": "e.g. LessThanOrEqualToThreshold", "required": True, "type": "string"},
+            "alarm_type": {"description": "Alarm template to use: zero_snowflake_load | lambda_version_change | pipeline_row_divergence", "required": True, "type": "string"},
+            "sns_topic_arn": {"description": "SNS topic ARN for alarm notifications", "required": False, "type": "string"},
         },
     },
     "quarantine_rows": {
         "lambda": "sigma-tool-quarantine-rows",
         "description": "Write rejected records to S3 quarantine/ with a reason tag.",
         "parameters": {
-            "records_json": {"description": "JSON array of records to quarantine", "required": True, "type": "string"},
+            "records": {"description": "JSON array of records to quarantine", "required": True, "type": "string"},
             "quarantine_reason": {"description": "Reason, e.g. null_transaction_id", "required": True, "type": "string"},
         },
     },
@@ -85,14 +81,14 @@ TOOLS = {
         "lambda": "sigma-tool-load-snowflake",
         "description": "Bulk load records to Snowflake using MERGE INTO on transaction_id (idempotent).",
         "parameters": {
-            "records_json": {"description": "JSON array of records to load", "required": True, "type": "string"},
+            "records": {"description": "JSON array of records to load", "required": True, "type": "string"},
         },
     },
     "write_incident_report": {
         "lambda": "sigma-tool-write-report",
         "description": "Write a structured incident post-mortem report to S3 reports/.",
         "parameters": {
-            "findings_json": {"description": "JSON object with all agent findings", "required": True, "type": "string"},
+            "findings": {"description": "JSON object with all agent findings", "required": True, "type": "string"},
         },
     },
     "send_sns_alert": {

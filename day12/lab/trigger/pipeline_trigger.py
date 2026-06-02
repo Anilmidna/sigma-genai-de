@@ -88,7 +88,7 @@ def health_check():
 def invoke_supervisor(message: str, session_id: str):
     if not SUPERVISOR_ID:
         print("\n[ERROR] SUPERVISOR_AGENT_ID not set in .env")
-        print("  Get this from Anil at the start of class.")
+        print("  Run: python lab/create_agents.py")
         sys.exit(1)
 
     bedrock = boto3.client("bedrock-agent-runtime", region_name=REGION)
