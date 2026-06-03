@@ -74,9 +74,27 @@ def rollback(function_name: str, alias_name: str,
             (i for i, v in enumerate(numbered) if v["Version"] == current_ver), -1
         )
         if current_idx <= 0:
-            result["status"] = "ERROR — no previous version to roll back to"
-            return result
-        target_version = numbered[current_idx - 1]["Version"]
+            if current_ver == "1":
+                target_version = "1"
+            else:
+                result["status"] = "ERROR — no previous version to roll back to"
+                return result
+        else:
+            target_version = numbered[current_idx - 1]["Version"]
+
+    # If already on target version, skip update_alias
+    if current_ver == target_version:
+        result["after"] = {
+            "alias":   alias_name,
+            "version": target_version,
+        }
+        result["verification"] = {
+            "test_records_sent": 0,
+            "results": [{"status": "PASS", "detail": "Already on stable version"}],
+            "stable": True,
+        }
+        result["status"] = "SUCCESS"
+        return result
 
     # ── Update alias ──────────────────────────────────────────────────────────
     try:

@@ -15,7 +15,11 @@ from datetime import datetime, timezone
 def lambda_handler(event, context):
     params = {p["name"]: p["value"] for p in event.get("parameters", [])}
 
-    records    = json.loads(params.get("records", "[]"))
+    records_raw = params.get("records", params.get("records_json", "[]"))
+    if isinstance(records_raw, list):
+        records = records_raw
+    else:
+        records = json.loads(records_raw)
     table_name = params.get("table_name",
                             f"{os.getenv('SNOWFLAKE_DATABASE','SIGMA')}."
                             f"{os.getenv('SNOWFLAKE_SCHEMA','SILVER')}.TRANSACTIONS")

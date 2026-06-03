@@ -1,0 +1,57 @@
+name: Sigma DataTech Pipeline CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: [3.10]
+
+    steps:
+      # Checkout the repository code to make it available for subsequent steps
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up the specified Python version for the job
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Cache pip dependencies to speed up subsequent workflow runs
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Install the required Python dependencies
+      - name: Install dependencies
+        run: pip install duckdb pytest pytest-cov ruff pandas
+
+      # Run the ruff linter to check for code style and potential issues
+      - name: Run ruff linter
+        run: ruff check day8/lab/ --output-format=github
+
+      # Set up the local DuckDB database required for the pipeline
+      - name: Set up local DuckDB
+        run: python day8/lab/0_setup_duckdb.py
+
+      # Run the pytest suite to ensure the pipeline functions correctly
+      - name: Run pytest
+        run: pytest day8/lab/devops_brain/test_pipeline.py -v --tb=short
+
+      # Generate a coverage report to ensure adequate test coverage
+      - name: Generate coverage report
+        run: pytest day8/lab/devops_brain/test_pipeline.py --cov=day8/lab --cov-report=term-missing

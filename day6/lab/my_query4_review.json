@@ -1,0 +1,27 @@
+{
+  "file": "queries/my_query4.sql",
+  "reviewed_at": "2026-05-25T18:42:14.640880",
+  "issues_found": 2,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect table reference",
+        "line": "1",
+        "problem": "The query references a table 'students' which does not exist in the provided schema.",
+        "fix": "SELECT merchant_name FROM sigma_analytics.dim_merchant LIMIT 5;"
+      },
+      {
+        "severity": "Medium",
+        "category": "Readability",
+        "title": "Lack of ORDER BY clause",
+        "line": "1",
+        "problem": "The query lacks an ORDER BY clause which can lead to unpredictable results.",
+        "fix": "SELECT merchant_name FROM sigma_analytics.dim_merchant ORDER BY merchant_name LIMIT 5;"
+      }
+    ],
+    "corrected_sql": "SELECT merchant_name FROM sigma_analytics.dim_merchant ORDER BY merchant_name LIMIT 5;",
+    "summary": "The query had an incorrect table reference and lacked an ORDER BY clause for predictable results."
+  }
+}

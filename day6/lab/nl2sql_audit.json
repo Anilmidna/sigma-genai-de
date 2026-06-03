@@ -6,38 +6,33 @@
     "reason": "Rejected: must start with SELECT, got: DROP TABLE FACT_TRANSACTIONS;"
   },
   {
-    "timestamp": "2026-05-25T12:42:11.994595",
     "question": "How many transactions do we have in total?",
     "sql": "SELECT COUNT(*) AS TOTAL_TRANSACTIONS\nFROM FACT_TRANSACTIONS;",
-    "row_count": 1,
-    "status": "SUCCESS"
+    "status": "SQL_ERROR",
+    "error": "snowflake-connector not installed \u2014 SQL generated but not executed"
   },
   {
-    "timestamp": "2026-05-25T12:42:22.793918",
     "question": "How many transactions failed?",
     "sql": "SELECT COUNT(*) AS FAILED_COUNT \nFROM FACT_TRANSACTIONS \nWHERE STATUS = 'FAILED';",
-    "row_count": 1,
-    "status": "SUCCESS"
+    "status": "SQL_ERROR",
+    "error": "snowflake-connector not installed \u2014 SQL generated but not executed"
   },
   {
-    "timestamp": "2026-05-25T12:42:26.895206",
     "question": "Which merchant had the highest revenue?",
-    "sql": "SELECT M.MERCHANT_NAME,\n       SUM(CASE WHEN T.STATUS='COMPLETED' THEN T.AMOUNT ELSE 0 END) AS REVENUE_USD\nFROM FACT_TRANSACTIONS T\nJOIN DIM_MERCHANT M ON T.MERCHANT_ID = M.MERCHANT_ID\nGROUP BY M.MERCHANT_NAME\nORDER BY REVENUE_USD DESC\nLIMIT 1;",
-    "row_count": 1,
-    "status": "SUCCESS"
+    "sql": "SELECT m.MERCHANT_NAME,\n       SUM(CASE WHEN t.STATUS='COMPLETED' THEN t.AMOUNT ELSE 0 END) AS REVENUE_USD\nFROM FACT_TRANSACTIONS t\nJOIN DIM_MERCHANT m ON t.MERCHANT_ID = m.MERCHANT_ID\nGROUP BY m.MERCHANT_NAME\nORDER BY REVENUE_USD DESC\nLIMIT 1;",
+    "status": "SQL_ERROR",
+    "error": "snowflake-connector not installed \u2014 SQL generated but not executed"
   },
   {
-    "timestamp": "2026-05-25T12:42:31.635585",
     "question": "What is the failure rate for each payment method?",
     "sql": "SELECT PAYMENT_METHOD,\n       COUNT(*) AS TOTAL_TRANSACTIONS,\n       SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,\n       ROUND(100.0 * SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT\nFROM FACT_TRANSACTIONS\nGROUP BY PAYMENT_METHOD\nORDER BY FAILURE_RATE_PCT DESC;",
-    "row_count": 3,
-    "status": "SUCCESS"
+    "status": "SQL_ERROR",
+    "error": "snowflake-connector not installed \u2014 SQL generated but not executed"
   },
   {
-    "timestamp": "2026-05-25T12:42:39.130339",
     "question": "What was the total revenue generated across all merchants?",
     "sql": "SELECT SUM(AMOUNT) AS TOTAL_REVENUE_USD\nFROM FACT_TRANSACTIONS\nWHERE STATUS = 'COMPLETED';",
-    "row_count": 1,
-    "status": "SUCCESS"
+    "status": "SQL_ERROR",
+    "error": "snowflake-connector not installed \u2014 SQL generated but not executed"
   }
 ]

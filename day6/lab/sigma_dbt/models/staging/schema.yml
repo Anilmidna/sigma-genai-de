@@ -2,7 +2,7 @@ version: 2
 
 stg_fact_transactions:
   source: sigma_analytics
-  table: fact_transactions
+  description: "Staging table for fact_transactions from sigma_analytics"
   columns:
     transaction_id:
       description: "Unique identifier for each transaction"
@@ -34,7 +34,7 @@ stg_fact_transactions:
 
 stg_dim_merchant:
   source: sigma_analytics
-  table: dim_merchant
+  description: "Staging table for dim_merchant from sigma_analytics"
   columns:
     merchant_id:
       description: "Unique identifier for each merchant"
@@ -52,7 +52,7 @@ stg_dim_merchant:
 
 stg_dim_customer:
   source: sigma_analytics
-  table: dim_customer
+  description: "Staging table for dim_customer from sigma_analytics"
   columns:
     customer_id:
       description: "Unique identifier for each customer"
@@ -64,7 +64,7 @@ stg_dim_customer:
     email:
       description: "Email of the customer"
     tier:
-      description: "Tier of the customer (GOLD, SILVER, BRONZE)"
+      description: "Customer tier (GOLD, SILVER, BRONZE)"
       tests:
         - accepted_values:
             values: ['GOLD', 'SILVER', 'BRONZE']

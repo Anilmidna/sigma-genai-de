@@ -26,13 +26,13 @@
       "name": "ROW_COUNT_LOGGING",
       "status": "WARN",
       "finding": "No row count logging after transformation stages.",
-      "fix": "Add logging for row counts after each transformation stage."
+      "fix": "Add logging statements to log row counts after each transformation."
     },
     {
       "id": 5,
       "name": "BUSINESS_RULES",
       "status": "PASS",
-      "finding": "Revenue is calculated as SUM(amount) WHERE status='COMPLETED'.",
+      "finding": "Revenue is calculated correctly as SUM(amount) WHERE status='COMPLETED'.",
       "fix": "None required."
     },
     {
@@ -45,23 +45,23 @@
     {
       "id": 7,
       "name": "BROADCAST_HINT",
-      "status": "WARN",
-      "finding": "broadcast() is not used on the merchant dimension join.",
-      "fix": "Use broadcast() on the merchant dimension join."
+      "status": "PASS",
+      "finding": "broadcast() is used on the merchant dimension join.",
+      "fix": "None required."
     },
     {
       "id": 8,
       "name": "HARDCODED_PATHS",
       "status": "FAIL",
       "finding": "File paths are hardcoded as strings.",
-      "fix": "Use parameters instead of hardcoded file paths."
+      "fix": "Replace hardcoded paths with parameters."
     },
     {
       "id": 9,
       "name": "SCHEMA_VALIDATION",
       "status": "WARN",
       "finding": "No schema validation before transforming.",
-      "fix": "Add schema validation to check expected columns."
+      "fix": "Add schema validation to check for expected columns."
     },
     {
       "id": 10,
@@ -86,17 +86,17 @@
     }
   ],
   "summary": {
-    "pass_count": 6,
+    "pass_count": 7,
     "fail_count": 2,
-    "warn_count": 4,
+    "warn_count": 3,
     "merge_recommendation": "APPROVE_WITH_CHANGES",
     "top_3_fixes": [
-      "Wrap each pipeline stage in try/except blocks.",
-      "Add logging for row counts after each transformation stage.",
-      "Use parameters instead of hardcoded file paths."
+      "Add try/except blocks around pipeline stages.",
+      "Replace hardcoded paths with parameters.",
+      "Add row count logging after each transformation."
     ]
   },
-  "reviewed_file": "pipeline_brain\\generated_pipeline.py",
-  "reviewed_at": "2026-05-26T11:10:54.020507+00:00",
+  "reviewed_file": "pipeline_brain/generated_pipeline.py",
+  "reviewed_at": "2026-05-26T11:51:47.299281+00:00",
   "model": "amazon.nova-pro-v1:0"
 }

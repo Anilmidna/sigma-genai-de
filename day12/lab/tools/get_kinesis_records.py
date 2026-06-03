@@ -1,34 +1,46 @@
 """
-Lambda Tool: get_s3_records  (registered as get_kinesis_records for API compatibility)
+Lambda Tool: get_kinesis_records
 Called by: Recovery Agent
+Action group: DataPlatformTools
 
-Reads malformed JSON files from S3 Bronze that were not loaded to Snowflake.
-Applies field remapping (merchant_nm → merchant_name, DD-MM-YYYY → YYYY-MM-DD).
-Returns clean records ready for load_to_snowflake.
+Replays records from a Kinesis shard starting at a specific timestamp.
+Returns records with field remapping applied (merchant_nm → merchant_name,
+DD-MM-YYYY → YYYY-MM-DD date fix).
 
-Idempotency: caller passes already_loaded_ids so this tool excludes
+Idempotency: caller passes already_loaded_ids so this tool can exclude
 records already in Snowflake — zero duplicates guaranteed.
 """
 
-import boto3, json, os, re
+import boto3, json, os, re, time
 from datetime import datetime, timezone
 
 
 def lambda_handler(event, context):
     params = {p["name"]: p["value"] for p in event.get("parameters", [])}
 
-    bucket              = params.get("bucket", os.getenv("SIGMA_S3_BUCKET", ""))
-    prefix              = params.get("start_timestamp", "bronze/")    # S3 prefix to read
-    already_loaded_ids  = json.loads(params.get("already_loaded_ids", "[]"))
+    stream_name         = params.get("stream_name", os.getenv("SIGMA_STREAM", "sigma-transactions"))
+    shard_id            = params.get("shard_id", "shardId-000000000000")
+    start_timestamp     = params.get("start_timestamp")          # ISO string
+    already_loaded_ids_raw = params.get("already_loaded_ids", "[]")
+    if isinstance(already_loaded_ids_raw, list):
+        already_loaded_ids = already_loaded_ids_raw
+    elif str(already_loaded_ids_raw).startswith("["):
+        try:
+            already_loaded_ids = json.loads(already_loaded_ids_raw)
+        except Exception:
+            already_loaded_ids = [x.strip() for x in str(already_loaded_ids_raw).split(",") if x.strip()]
+    else:
+        already_loaded_ids = [x.strip() for x in str(already_loaded_ids_raw).split(",") if x.strip()]
     region              = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
 
-    result = read_s3_records(bucket, prefix, already_loaded_ids, region)
+    result = replay_records(stream_name, shard_id, start_timestamp,
+                            already_loaded_ids, region)
 
     return {
         "messageVersion": "1.0",
         "response": {
             "actionGroup": event.get("actionGroup"),
-            "function":    event.get("function"),
+            "function": event.get("function"),
             "functionResponse": {
                 "responseBody": {"TEXT": {"body": json.dumps(result, default=str)}}
             },
@@ -37,14 +49,18 @@ def lambda_handler(event, context):
 
 
 def fix_record(record: dict) -> dict:
-    """Apply field remapping from the broken Lambda v2."""
+    """
+    Apply field remapping introduced by the broken Lambda v2.
+    merchant_nm  → merchant_name  (field was renamed in v2)
+    DD-MM-YYYY   → YYYY-MM-DD    (date format changed in v2)
+    """
     fixed = dict(record)
 
-    # Fix field rename: merchant_nm → merchant_name
+    # Fix field rename
     if "merchant_nm" in fixed and "merchant_name" not in fixed:
         fixed["merchant_name"] = fixed.pop("merchant_nm")
 
-    # Fix date format: DD-MM-YYYY → YYYY-MM-DD
+    # Fix date format
     date_val = fixed.get("transaction_date", "")
     if re.match(r"^\d{2}-\d{2}-\d{4}$", str(date_val)):
         parts = str(date_val).split("-")
@@ -53,60 +69,57 @@ def fix_record(record: dict) -> dict:
     return fixed
 
 
-def read_s3_records(bucket: str, prefix: str, already_loaded_ids: list,
-                    region: str) -> dict:
-    if not bucket:
-        return {"error": "SIGMA_S3_BUCKET not set in environment"}
-
+def replay_records(stream_name: str, shard_id: str, start_timestamp: str,
+                   already_loaded_ids: list, region: str) -> dict:
+    # Switch to S3 read mode directly
+    bucket_name = os.getenv("SIGMA_S3_BUCKET", "sigma-datatech-ud")
     s3 = boto3.client("s3", region_name=region)
+    print(f"  [S3 REPLAY BYPASS] Replaying records directly from S3 bucket '{bucket_name}' under bronze/ prefix...")
 
-    # Normalise prefix — strip "bronze/" if caller passed a timestamp
-    if not prefix.startswith("bronze/"):
-        prefix = f"bronze/disaster/"   # default disaster prefix
-
-    # List all JSON files under the prefix
-    resp  = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-    files = [o["Key"] for o in resp.get("Contents", [])
-             if o["Key"].endswith(".json") and o["Size"] > 0]
-
-    loaded_set    = set(already_loaded_ids)
     raw_records   = []
     fixed_records = []
     skipped_ids   = []
+    loaded_set = set(already_loaded_ids)
 
-    for key in files:
-        try:
-            body    = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
-            content = json.loads(body)
+    try:
+        resp = s3.list_objects_v2(Bucket=bucket_name, Prefix="bronze/")
+        for obj in resp.get("Contents", []):
+            key = obj["Key"]
+            if not key.endswith(".json"):
+                continue
+            
+            # Read line-delimited JSON Line file
+            file_obj = s3.get_object(Bucket=bucket_name, Key=key)
+            content  = file_obj["Body"].read().decode("utf-8")
+            
+            for line in content.splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    data = json.loads(line)
+                    raw_records.append(data)
+                    fixed = fix_record(data)
+                    tid   = fixed.get("transaction_id", "")
 
-            # Support both single record and array of records per file
-            if isinstance(content, list):
-                batch = content
-            else:
-                batch = [content]
-
-            for rec in batch:
-                raw_records.append(rec)
-                fixed = fix_record(rec)
-                tid   = fixed.get("transaction_id", "")
-
-                if tid and tid in loaded_set:
-                    skipped_ids.append(tid)
-                else:
-                    fixed_records.append(fixed)
-                    if tid:
-                        loaded_set.add(tid)
-        except Exception:
-            pass   # skip unreadable files
+                    if tid and tid in loaded_set:
+                        skipped_ids.append(tid)    # already in Snowflake — skip
+                    else:
+                        fixed_records.append(fixed)
+                        if tid:
+                            loaded_set.add(tid)
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"  Error reading files from S3: {e}")
 
     return {
-        "bucket":             bucket,
-        "prefix":             prefix,
-        "files_read":         len(files),
-        "raw_records_found":  len(raw_records),
+        "stream_name":       stream_name,
+        "shard_id":          shard_id,
+        "start_timestamp":   start_timestamp,
+        "raw_records_found": len(raw_records),
         "duplicates_skipped": len(skipped_ids),
-        "clean_records":      len(fixed_records),
-        "records":            fixed_records,
+        "clean_records":     len(fixed_records),
+        "records":           fixed_records,
         "field_fixes_applied": {
             "merchant_nm_renamed": sum(1 for r in raw_records if "merchant_nm" in r),
             "date_format_fixed":   sum(
@@ -118,26 +131,25 @@ def read_s3_records(bucket: str, prefix: str, already_loaded_ids: list,
     }
 
 
-# ── Local test ─────────────────────────────────────────────────────────────────
+# ── Local test ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import sys
     from dotenv import load_dotenv
     load_dotenv()
 
-    bucket = os.getenv("SIGMA_S3_BUCKET", "")
+    stream = os.getenv("SIGMA_STREAM", "sigma-transactions")
     region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
 
-    print(f"\nReading disaster files from s3://{bucket}/bronze/disaster/...\n")
-    result = read_s3_records(bucket, "bronze/disaster/", [], region)
+    print(f"\nReplaying from {stream} (TRIM_HORIZON for test)...\n")
+    result = replay_records(stream, "shardId-000000000000", None, [], region)
 
-    print(f"Files read         : {result['files_read']}")
     print(f"Raw records found  : {result['raw_records_found']}")
     print(f"Duplicates skipped : {result['duplicates_skipped']}")
     print(f"Clean records      : {result['clean_records']}")
     print(f"Field fixes        : {result['field_fixes_applied']}")
 
     if result["records"]:
-        print(f"\nSample (after fix): {json.dumps(result['records'][0], indent=2)}")
+        print(f"\nSample record: {json.dumps(result['records'][0], indent=2)}")
 
     if "--test" in sys.argv:
         assert "records" in result

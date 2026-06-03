@@ -1,0 +1,7 @@
+{
+  "lab": "2 - Sigma DataTech",
+  "sensitive_columns": "The three most sensitive columns in the warehouse are pan_number, bank_account_number, and personal_email because they contain highly sensitive personal and financial information requiring strict access controls.",
+  "hacker_target": "The workforce/employee table (stg_workforce) would cause the most damage if leaked because it contains sensitive employee PII such as PAN numbers, personal emails, bank account details, and other personally identifiable information.",
+  "gdpr_risk": "The stg_workforce table would need GDPR consent management first because it contains personal employee data such as emails, PAN-equivalent identifiers, and other information that can directly identify individuals.",
+  "timestamp": "2026-06-03T06:55:21.865544+00:00"
+}

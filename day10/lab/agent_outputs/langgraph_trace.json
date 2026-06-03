@@ -1,0 +1,38 @@
+[
+  {
+    "question": "Which payment methods are growing fastest this month compared to last month? Show percentage growth.",
+    "final_sql": "SELECT payment_method, COALESCE(((current_month.total_amount - previous_month.total_amount) * 100.0 / NULLIF(previous_month.total_amount, 0)), 0) AS growth_percentage FROM (SELECT payment_method, SUM(amount) AS total_amount FROM silver_transactions WHERE transaction_date >= DATE_TRUNC('month', CURRENT_DATE) AND transaction_date < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' AND payment_method IS NOT NULL AND amount IS NOT NULL GROUP BY payment_method) current_month JOIN (SELECT payment_method, SUM(amount) AS total_amount FROM silver_transactions WHERE transaction_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') AND transaction_date < DATE_TRUNC('month', CURRENT_DATE) AND payment_method IS NOT NULL AND amount IS NOT NULL GROUP BY payment_method) previous_month ON current_month.payment_method = previous_month.payment_method ORDER BY growth_percentage DESC;",
+    "review_rounds": 3,
+    "approved": false,
+    "result_preview": "EXECUTION ERROR: Binder Error: Ambiguous reference to column name \"payment_method\" (use: \"current_month.payment_method\" or \"previous_month.payment_method\")\n\nLINE 1: SELECT payment_method, COALESCE(((current_month.total_amount -...\n               ^",
+    "answer": "Query failed: Binder Error: Ambiguous reference to column name \"payment_method\" (use: \"current_month.payment_method\" or \"previous_month.payment_method\")\n\nLINE 1: SELECT payment_method, COALESCE(((current_month.total_amount -...\n               ^",
+    "trace": [
+      "[Generator] Round 1: Generated SQL (620 chars)",
+      "[Reviewer] Round 1: REJECTED",
+      "[Generator] Round 2: Generated SQL (751 chars)",
+      "[Reviewer] Round 2: REJECTED",
+      "[Generator] Round 3: Generated SQL (890 chars)",
+      "[Reviewer] Round 3: REJECTED",
+      "[Executor] SQL ran successfully. 0 rows."
+    ],
+    "student_judgment": "Missing NULL handling and correct DuckDB date syntax"
+  },
+  {
+    "question": "Which 5 merchants have the highest refund rate? Show refund count and total transaction count.",
+    "final_sql": "SELECT m.merchant_id, m.merchant_name, SUM(CASE WHEN st.status = 'REFUNDED' THEN 1 ELSE 0 END) AS refund_count, COUNT(st.transaction_id) AS total_transaction_count, (SUM(CASE WHEN st.status = 'REFUNDED' THEN 1.0 ELSE 0 END) / NULLIF(COUNT(st.transaction_id), 0)) * 100 AS refund_rate_pct FROM merchants m JOIN silver_transactions st ON m.merchant_id = st.merchant_id WHERE st.quality_flag = 'PASS' AND st.transaction_date BETWEEN DATE_TRUNC('year', CURRENT_DATE) AND CURRENT_DATE AND st.status IN ('REFUNDED', 'COMPLETED', 'FAILED') GROUP BY m.merchant_id, m.merchant_name ORDER BY refund_rate_pct DESC LIMIT 5;",
+    "review_rounds": 3,
+    "approved": false,
+    "result_preview": "Query returned 0 rows.",
+    "answer": "Based on the current data, there are no merchants with recorded refunds, as the query returned 0 rows. Therefore, it is not possible to identify the top 5 merchants with the highest refund rate, nor can we provide specific figures for refund count and total transaction count.",
+    "trace": [
+      "[Generator] Round 1: Generated SQL (544 chars)",
+      "[Reviewer] Round 1: REJECTED",
+      "[Generator] Round 2: Generated SQL (570 chars)",
+      "[Reviewer] Round 2: REJECTED",
+      "[Generator] Round 3: Generated SQL (611 chars)",
+      "[Reviewer] Round 3: REJECTED",
+      "[Executor] SQL ran successfully. 0 rows."
+    ],
+    "student_judgment": "Missing NULL handling and correct DuckDB date syntax"
+  }
+]

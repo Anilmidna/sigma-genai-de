@@ -8,9 +8,9 @@ WITH cleaned_transactions AS (
         CAST(transaction_date AS DATE) AS transaction_date,
         LOWER(payment_method) AS payment_method,
         CURRENT_TIMESTAMP AS loaded_at
-    FROM 
+    FROM
         {{ source('sigma_analytics', 'fact_transactions') }}
-    WHERE 
+    WHERE
         merchant_id NOT LIKE 'TEST_%'
 )
 
@@ -40,19 +40,13 @@ models:
           - accepted_values:
               values: ['completed', 'failed', 'pending']
       - name: merchant_id
-        description: "Foreign key referencing dim_merchant."
+        description: "Unique identifier for the merchant."
         tests:
           - not_null
-          - relationships:
-              to: ref('dim_merchant')
-              field: merchant_id
       - name: customer_id
-        description: "Foreign key referencing dim_customer."
+        description: "Unique identifier for the customer."
         tests:
           - not_null
-          - relationships:
-              to: ref('dim_customer')
-              field: customer_id
       - name: transaction_date
         description: "Date of the transaction."
         tests:

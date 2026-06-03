@@ -4,15 +4,15 @@
   "spec_chars": 2657,
   "bronze_silver_tokens": {
     "input": 1060,
-    "output": 969
+    "output": 1099
   },
   "gold_tokens": {
     "input": 1138,
-    "output": 1383
+    "output": 1003
   },
   "total_tokens_in": 2198,
-  "total_tokens_out": 2352,
-  "output_file": "pipeline_brain\\generated_pipeline.py",
-  "output_bytes": 9618,
-  "generated_at": "2026-05-26T09:46:14.835561+00:00"
+  "total_tokens_out": 2102,
+  "output_file": "pipeline_brain/generated_pipeline.py",
+  "output_bytes": 9041,
+  "generated_at": "2026-05-26T08:57:35.008217+00:00"
 }

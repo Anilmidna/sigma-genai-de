@@ -1,0 +1,63 @@
+{
+  "run_id": "181121",
+  "results": [
+    {
+      "id": "TXN100441",
+      "merchant": "QuickMart",
+      "amount": 4521.5,
+      "decision": "QUARANTINE",
+      "expected": "PASS",
+      "correct": false,
+      "reason": "The date is in the future.",
+      "latency_ms": 1262,
+      "tokens": 213
+    },
+    {
+      "id": "TXN100467",
+      "merchant": "FuelPlus",
+      "amount": -892.0,
+      "decision": "QUARANTINE",
+      "expected": "QUARANTINE",
+      "correct": true,
+      "reason": "Negative amount, future date, and unknown currency",
+      "latency_ms": 596,
+      "tokens": 216
+    },
+    {
+      "id": "TXN100489",
+      "merchant": "Apollo Hospital",
+      "amount": 980000.0,
+      "decision": "QUARANTINE",
+      "expected": "PASS",
+      "correct": false,
+      "reason": "The date of the transaction is in the future.",
+      "latency_ms": 844,
+      "tokens": 218
+    },
+    {
+      "id": "TXN100512",
+      "merchant": "CloudStore",
+      "amount": 15230.0,
+      "decision": "QUARANTINE",
+      "expected": "QUARANTINE",
+      "correct": true,
+      "reason": "Unknown currency and future date",
+      "latency_ms": 730,
+      "tokens": 214
+    },
+    {
+      "id": "TXN100534",
+      "merchant": "CafeBlend",
+      "amount": 340.0,
+      "decision": "QUARANTINE",
+      "expected": "QUARANTINE",
+      "correct": true,
+      "reason": "The transaction date is in the future.",
+      "latency_ms": 718,
+      "tokens": 213
+    }
+  ],
+  "correct": 3,
+  "total": 5,
+  "student_judgment": "Add the dataset's processing date (or business date) and explicitly instruct the agent that future transaction dates are valid if they occur after the current system date but within the reporting period or test dataset timeframe."
+}

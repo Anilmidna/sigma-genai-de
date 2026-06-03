@@ -1,0 +1,27 @@
+{
+  "file": "queries/my_query3.sql",
+  "reviewed_at": "2026-05-25T18:42:13.284468",
+  "issues_found": 2,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Missing Join Condition",
+        "line": "3",
+        "problem": "The query pairs every customer with every order due to the absence of a join condition.",
+        "fix": "JOIN orders ON customers.customer_id = orders.customer_id"
+      },
+      {
+        "severity": "Low",
+        "category": "Readability",
+        "title": "Implicit Join Syntax",
+        "line": "1",
+        "problem": "Using the comma-separated table list in the FROM clause is less readable and more prone to errors.",
+        "fix": "SELECT customers.name, orders.order_date FROM customers JOIN orders ON customers.customer_id = orders.customer_id;"
+      }
+    ],
+    "corrected_sql": "SELECT customers.customer_name AS name, orders.transaction_date AS order_date FROM sigma_analytics.dim_customer AS customers JOIN sigma_analytics.fact_transactions AS orders ON customers.customer_id = orders.customer_id;",
+    "summary": "The query had a critical correctness issue due to missing join condition and a readability issue with the implicit join syntax."
+  }
+}

@@ -1,142 +1,80 @@
 version: 2
 
-mart_transaction_metrics:
-  description: "Mart table for transaction metrics including revenue, failure rate, and merchant details."
+mart_transaction_summary:
+  description: "Mart for summarizing transaction data including revenue, failure rate, and merchant details."
   columns:
-    - name: transaction_id
-      description: "Unique identifier for each transaction."
-      tests:
-        - not_null
-    - name: amount
-      description: "Amount of the transaction in USD."
-      tests:
-        - not_null
-    - name: status
-      description: "Status of the transaction (COMPLETED, FAILED, PENDING)."
-      tests:
-        - accepted_values:
-            values: ['COMPLETED', 'FAILED', 'PENDING']
-        - not_null
-    - name: merchant_id
-      description: "Foreign key to dim_merchant."
-      tests:
-        - not_null
-        - relationships:
-            to: ref('dim_merchant')
-            field: merchant_id
-    - name: customer_id
-      description: "Foreign key to dim_customer."
-      tests:
-        - not_null
-        - relationships:
-            to: ref('dim_customer')
-            field: customer_id
-    - name: transaction_date
-      description: "Date of the transaction."
-      tests:
-        - not_null
-    - name: payment_method
-      description: "Payment method used (CREDIT_CARD, DEBIT_CARD, UPI)."
-      tests:
-        - accepted_values:
-            values: ['CREDIT_CARD', 'DEBIT_CARD', 'UPI']
-        - not_null
     - name: merchant_name
-      description: "Name of the merchant."
-      tests:
-        - not_null
+      description: "Name of the merchant from the dim_merchant table."
     - name: total_revenue
-      description: "Total revenue from completed transactions."
-      tests:
-        - not_null
-        - generic_test:
-            function: "test_total_revenue_gte_zero"
+      description: "Total revenue generated from completed transactions."
     - name: failure_rate_pct
-      description: "Failure rate of transactions as a percentage."
-      tests:
-        - not_null
-        - generic_test:
-            function: "test_failure_rate_between_zero_and_one_hundred"
-    - name: invalid_status_count
-      description: "Count of transactions with invalid status (should be 0)."
-      tests:
-        - generic_test:
-            function: "test_invalid_status_count_is_zero"
-
+      description: "Percentage of failed transactions out of total transactions."
+    - name: transaction_count
+      description: "Total number of transactions."
+  tests:
+    - not_null:
+        column_name: merchant_name
+    - generic_test:
+        name: failure_rate_pct_between_0_and_100
+        arguments:
+          column_name: failure_rate_pct
+          min_value: 0
+          max_value: 100
+    - generic_test:
+        name: total_revenue_gte_0
+        arguments:
+          column_name: total_revenue
+          min_value: 0
+    - generic_test:
+        name: no_cancelled_status
+        arguments:
+          column_name: status
+          accepted_values: ['COMPLETED', 'FAILED', 'PENDING']
 ```
 
 ```sql
--- models/marts/mart_transaction_metrics.sql
+-- models/marts/mart_transaction_summary.sql
 
 WITH completed_transactions AS (
     SELECT
-        transaction_id,
-        amount,
-        status,
         merchant_id,
-        customer_id,
-        transaction_date,
-        payment_method
+        SUM(amount) AS total_revenue,
+        COUNT(*) AS completed_transaction_count
     FROM {{ ref('fact_transactions') }}
     WHERE status = 'COMPLETED'
+    GROUP BY merchant_id
+),
+
+failed_transactions AS (
+    SELECT
+        merchant_id,
+        COUNT(*) AS failed_transaction_count
+    FROM {{ ref('fact_transactions') }}
+    WHERE status = 'FAILED'
+    GROUP BY merchant_id
+),
+
+total_transactions AS (
+    SELECT
+        merchant_id,
+        COUNT(*) AS total_transaction_count
+    FROM {{ ref('fact_transactions') }}
+    GROUP BY merchant_id
 ),
 
 merchant_details AS (
     SELECT
         merchant_id,
-        merchant_name,
-        category,
-        city,
-        onboarded_date
+        merchant_name
     FROM {{ ref('dim_merchant') }}
-),
-
-customer_details AS (
-    SELECT
-        customer_id,
-        customer_name,
-        email,
-        tier,
-        signup_date,
-        city
-    FROM {{ ref('dim_customer') }}
-),
-
-revenue_calc AS (
-    SELECT
-        SUM(amount) AS total_revenue
-    FROM completed_transactions
-),
-
-failure_rate_calc AS (
-    SELECT
-        COUNT(CASE WHEN status = 'FAILED' THEN 1 END) * 100.0 / COUNT(*) AS failure_rate_pct
-    FROM {{ ref('fact_transactions') }}
-),
-
-invalid_status_check AS (
-    SELECT
-        COUNT(*) AS invalid_status_count
-    FROM {{ ref('fact_transactions') }}
-    WHERE status = 'CANCELLED'
 )
 
 SELECT
-    ct.transaction_id,
-    ct.amount,
-    ct.status,
-    ct.merchant_id,
     md.merchant_name,
-    ct.customer_id,
-    cd.customer_name,
-    ct.transaction_date,
-    ct.payment_method,
-    rc.total_revenue,
-    frc.failure_rate_pct,
-    isc.invalid_status_count
-FROM completed_transactions ct
-JOIN merchant_details md ON ct.merchant_id = md.merchant_id
-JOIN customer_details cd ON ct.customer_id = cd.customer_id
-CROSS JOIN revenue_calc rc
-CROSS JOIN failure_rate_calc frc
-CROSS JOIN invalid_status_check isc
+    COALESCE(ct.total_revenue, 0) AS total_revenue,
+    COALESCE((ft.failed_transaction_count::DECIMAL / tt.total_transaction_count::DECIMAL) * 100, 0) AS failure_rate_pct,
+    tt.total_transaction_count AS transaction_count
+FROM total_transactions tt
+LEFT JOIN completed_transactions ct ON tt.merchant_id = ct.merchant_id
+LEFT JOIN failed_transactions ft ON tt.merchant_id = ft.merchant_id
+JOIN merchant_details md ON tt.merchant_id = md.merchant_id

@@ -20,7 +20,7 @@ MISSION BRIEFING:
   That is the skill that separates a senior DE from a junior one.
 
 MANUAL FIRST (do this BEFORE running the script):
-  Look at sample_data.py — specifically TRANSACTIONS_DIRTY.
+  Look at sample_data.py — specifically TRANSACTIONS_DIRTY.pyth
   Pick ONE of the 7 dirty records and write ONE pytest assertion
   that would catch it. Just the assert line — 30 seconds max.
   Example: assert len(result) < len(TRANSACTIONS_DIRTY)

@@ -17,11 +17,11 @@ jobs:
         python-version: [3.10]
 
     steps:
-      # Checkout the repository code to make it available for subsequent steps
+      # Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up the specified Python version for the job
+      # Set up the specified Python version
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -44,7 +44,7 @@ jobs:
       - name: Run ruff linter
         run: ruff check day8/lab/ --output-format=github
 
-      # Set up the local DuckDB database required for the pipeline
+      # Set up the local DuckDB database
       - name: Set up local DuckDB
         run: python day8/lab/0_setup_duckdb.py
 

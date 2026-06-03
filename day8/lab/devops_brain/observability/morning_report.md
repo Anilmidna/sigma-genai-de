@@ -1,30 +1,22 @@
-# DataOps Morning Report — 2023-10-05
+# DataOps Morning Report — 2023-10-04
 
 ### Pipeline Status
 **HEALTHY**  
-The pipeline is currently healthy as there are no columns with nulls, and the drift share is within acceptable limits.
+The pipeline is currently healthy as there are no significant issues with data quality or drift.
 
 ### 5 Key Findings
-- **Total rows in Silver Layer:** 14  
-  This is a low number of rows, which might indicate a data issue or a recent pipeline run.
-- **Transaction status breakdown:**  
-  - COMPLETED: 11  
-  - FAILED: 2  
-  - PENDING: 1  
-  The majority of transactions are completed, but there are a couple of failed transactions which need attention.
-- **Amount range in Silver Layer:** 65.0 to 3400.0  
-  This wide range of transaction amounts is normal and expected in financial data.
-- **Mean transaction amount in Silver Layer:** 1002.86  
-  This is a significant amount, reflecting the nature of the transactions processed.
-- **Active merchants in Gold Layer:** 8  
-  The number of active merchants is stable, which is a positive sign for the business.
+- **Total Rows in Silver Layer:** 14 rows were processed, which is a low number but acceptable for this stage.
+- **Transaction Status Breakdown:** Out of 14 transactions, 11 were completed, 2 failed, and 1 is pending. The high completion rate is positive.
+- **Amount Range:** The transaction amounts ranged from 65.0 to 3400.0, indicating a wide variability in transaction sizes.
+- **Mean Transaction Amount:** The mean transaction amount is 1002.86, which is a useful metric for financial analysis.
+- **Drift Detection:** No dataset drift was detected, and the drift share is 0.5, which is within acceptable limits.
 
 ### Alerts to Watch
-- **Any increase in the number of FAILED transactions in the Silver Layer.**
-- **A significant change in the mean transaction amount in the Silver Layer.**
-- **Any new columns showing drift in the Bronze → Silver transformation.**
+- **High Failure Rate for Zomato:** The highest failure rate is 100.0% for Zomato. This warrants immediate investigation.
+- **Pending Transaction:** There is 1 pending transaction that needs to be resolved.
+- **Low Row Count:** The low total row count of 14 may indicate an issue with data ingestion.
 
 ### Recommended Actions
-- **Investigate the cause of the 2 FAILED transactions in the Silver Layer.**
-- **Monitor the transaction statuses throughout the day to ensure no further failures occur.**
-- **Review the data quality and completeness of the incoming data to ensure it meets the pipeline's requirements.**
+- **Investigate Zomato Failures:** Look into why all transactions for Zomato failed.
+- **Resolve Pending Transaction:** Ensure the pending transaction is either completed or failed.
+- **Review Data Ingestion:** Investigate the cause of the low row count to ensure data is being ingested correctly.
