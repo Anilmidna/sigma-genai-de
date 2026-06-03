@@ -9,7 +9,7 @@ Two labs, one script:
     python lab/lineage_agent.py --lab 1 --mystery lab/mystery_b/
 
   LAB 2 — Your Own Sigma DataTech dbt Project (client deliverable)
-    python lab/lineage_agent.py --lab 2 --models ../day6/sigma_dbt/models/
+    python lab/lineage_agent.py --lab 2 --models ../day6/lab/sigma_dbt/models/
 
 Lab 1: You don't know the company. Guess the industry. Govern blind.
 Lab 2: Your own project. Known domain. Produce the client catalogue.
