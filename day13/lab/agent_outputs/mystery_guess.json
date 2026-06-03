@@ -1,0 +1,7 @@
+{
+  "lab": "2 - Sigma DataTech",
+  "sensitive_columns": "customer_name, email, amount",
+  "hacker_target": "dim_customer",
+  "gdpr_risk": "dim_customer",
+  "timestamp": "2026-06-03T06:52:06.144696+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "lab": "2 - Sigma DataTech",
+  "sensitive_columns": "customer_id, merchant_id, amount",
+  "hacker_target": "stg_transactions",
+  "gdpr_risk": "stg_transactions",
+  "timestamp": "2026-06-03T06:33:28.672414+00:00"
+}
