@@ -15,7 +15,11 @@ from datetime import datetime, timezone
 def lambda_handler(event, context):
     params = {p["name"]: p["value"] for p in event.get("parameters", [])}
 
-    records           = json.loads(params.get("records", "[]"))
+    records_raw = params.get("records", params.get("records_json", "[]"))
+    if isinstance(records_raw, list):
+        records = records_raw
+    else:
+        records = json.loads(records_raw)
     quarantine_reason = params.get("quarantine_reason", "failed_quality_check")
     source_context    = params.get("source_context", "kinesis_replay")
     bucket            = params.get("bucket", os.getenv("SIGMA_S3_BUCKET", ""))

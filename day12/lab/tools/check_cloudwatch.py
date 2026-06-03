@@ -134,6 +134,24 @@ def investigate(function_name: str, hours_back: int, region: str) -> dict:
     except Exception as e:
         findings["kinesis_throttles"] = [{"error": str(e)}]
 
+    # ── S3 zero-byte detection (Option B) ────────────────────────────────────
+    try:
+        s3 = boto3.client("s3", region_name=region)
+        bucket_name = os.getenv("SIGMA_S3_BUCKET", "sigma-datatech-ud")
+        findings["s3_zero_byte_files"] = []
+        resp = s3.list_objects_v2(Bucket=bucket_name, Prefix="bronze/")
+        for obj in resp.get("Contents", []):
+            if obj["Size"] == 0:
+                findings["s3_zero_byte_files"].append({
+                    "key": obj["Key"],
+                    "size": obj["Size"],
+                    "last_modified": obj["LastModified"].isoformat(),
+                    "status": "zero-byte-detected"
+                })
+    except Exception as e:
+        findings["s3_zero_byte_files"] = [{"error": str(e)}]
+
+
     # ── Synthesise: find the anomaly window ───────────────────────────────────
     # Look for the timestamp where Lambda version changed AND errors appeared
     version_change_ts = None
@@ -162,7 +180,8 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    hours = int(sys.argv[1]) if len(sys.argv) > 1 else 8
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    hours = int(args[0]) if args else 8
     fn    = os.getenv("PRODUCER_LAMBDA_NAME", "sigma-kinesis-producer")
     region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
 

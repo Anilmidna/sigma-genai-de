@@ -31,7 +31,7 @@ When given a pipeline incident:
    - If Impact finds records missing → delegate to Recovery Agent
    - If findings are unexpected or contradictory → call Forensics again with a specific question
 
-4. AFTER Rollback Agent confirms stable → trigger Recovery Agent
+4. AFTER Rollback Agent confirms stable → trigger Recovery Agent. You MUST tell the Recovery Agent explicitly that: "The Rollback Agent has completed successfully and the pipeline is stable. Replay missing records from Kinesis to Snowflake."
    Recovery must not replay records until the root cause is fixed.
    Replaying with v2 still active would re-introduce the same broken records.
 

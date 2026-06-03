@@ -90,8 +90,8 @@ for ENTRY in "${TOOLS[@]}"; do
         echo "  Bundling snowflake-connector-python (takes ~30s)..."
         PKG_DIR="/tmp/pkg_${FUNC_NAME}"
         rm -rf "$PKG_DIR" && mkdir -p "$PKG_DIR"
-        pip install snowflake-connector-python -t "$PKG_DIR/" -q \
-            --only-binary :all:
+        /Users/as-mac-1288/sigma-genai-de/venv/bin/pip install snowflake-connector-python -t "$PKG_DIR/" -q \
+            --platform manylinux2014_x86_64 --only-binary=:all: --implementation cp --python-version 3.12
         cp "$FULL_PATH" "$PKG_DIR/${HANDLER_NAME}.py"
         rm -f "$ZIP_FILE"
         cd "$PKG_DIR" && zip -qr "$ZIP_FILE" . && cd - > /dev/null
@@ -114,11 +114,15 @@ for ENTRY in "${TOOLS[@]}"; do
             --region "$REGION" \
             --output text --query 'FunctionName' > /dev/null
 
+        # Wait for update to complete to avoid resource conflicts
+        aws lambda wait function-updated \
+            --function-name "$FUNC_NAME" \
+            --region "$REGION" > /dev/null
+
         # Update environment variables
         aws lambda update-function-configuration \
             --function-name "$FUNC_NAME" \
             --environment "Variables={
-                AWS_DEFAULT_REGION=$REGION,
                 SIGMA_S3_BUCKET=${SIGMA_S3_BUCKET:-},
                 SIGMA_STREAM=${SIGMA_STREAM:-sigma-transactions},
                 PRODUCER_LAMBDA_NAME=${PRODUCER_LAMBDA_NAME:-sigma-kinesis-producer},
@@ -147,7 +151,6 @@ for ENTRY in "${TOOLS[@]}"; do
             --timeout 120 \
             --memory-size 256 \
             --environment "Variables={
-                AWS_DEFAULT_REGION=$REGION,
                 SIGMA_S3_BUCKET=${SIGMA_S3_BUCKET:-},
                 SIGMA_STREAM=${SIGMA_STREAM:-sigma-transactions},
                 PRODUCER_LAMBDA_NAME=${PRODUCER_LAMBDA_NAME:-sigma-kinesis-producer},
@@ -183,7 +186,7 @@ echo "========================================================"
 echo ""
 echo "Testing MCP tool discovery..."
 cd "$LAB_DIR"
-python mcp/test_mcp.py
+/Users/as-mac-1288/sigma-genai-de/venv/bin/python3 mcp/test_mcp.py
 
 echo ""
 echo "Next steps:"
