@@ -1,0 +1,191 @@
+{
+  "mystery_folder": "sigma_datatech",
+  "industry_analysis": {
+    "industry": "Sigma DataTech \u2014 Fintech payments platform",
+    "what_they_do": "Processes merchant transactions in India. Tracks GMV, SLA breaches, and customer payments.",
+    "top_clues": [
+      "merchant_name",
+      "transaction_id",
+      "gmv_inr"
+    ],
+    "confidence": "HIGH"
+  },
+  "generated_at": "2026-06-03T06:55:21.867773+00:00",
+  "tables": {
+    "mart_merchant_performance": {
+      "source_tables": [
+        "stg_transactions",
+        "dim_merchant"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "merchant_id",
+          "source_table": "filtered_transactions",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "merchant_details",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "category",
+          "source_table": "merchant_details",
+          "source_column": "category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "city",
+          "source_table": "merchant_details",
+          "source_column": "city",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_revenue",
+          "source_table": "revenue_by_merchant",
+          "source_column": "total_revenue",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_transactions",
+          "source_table": "transaction_counts",
+          "source_column": "total_transactions",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "failed_count",
+          "source_table": "transaction_counts",
+          "source_column": "failed_count",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "failure_rate_pct",
+          "source_table": "transaction_counts",
+          "source_column": "failed_count, total_transactions",
+          "transformation": "calculation (failed_count * 100.0 / NULLIF(total_transactions, 0))"
+        },
+        {
+          "target_column": "avg_transaction_value",
+          "source_table": "avg_transaction_value",
+          "source_column": "avg_transaction_value",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "unique_customers",
+          "source_table": "unique_customers",
+          "source_column": "unique_customers",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "customer_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft and fraud."
+        }
+      ],
+      "business_description": "This model provides a comprehensive view of merchant performance metrics, including revenue, transaction counts, failure rates, average transaction values, and unique customer counts.",
+      "who_should_access": "Finance and performance analysis teams",
+      "who_should_NOT_access": "Marketing and sales teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that access to the 'customer_id' column is restricted due to its high sensitivity.",
+      "model_name": "mart_merchant_performance",
+      "sql_lines": 73,
+      "analysed_at": "2026-06-03T06:55:26.186742+00:00"
+    },
+    "mart_transaction_summary": {
+      "source_tables": [
+        "stg_transactions",
+        "dim_merchant"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "merchant_id",
+          "source_table": "stg_transactions",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_revenue",
+          "source_table": "stg_transactions",
+          "source_column": "amount",
+          "transformation": "SUM aggregation"
+        },
+        {
+          "target_column": "transaction_count",
+          "source_table": "stg_transactions",
+          "source_column": "*",
+          "transformation": "COUNT aggregation"
+        },
+        {
+          "target_column": "failed_count",
+          "source_table": "stg_transactions",
+          "source_column": "status",
+          "transformation": "COUNT with CASE condition"
+        },
+        {
+          "target_column": "failure_rate_pct",
+          "source_table": "transaction_counts",
+          "source_column": "failed_count, transaction_count",
+          "transformation": "Calculation: (failed_count / transaction_count) * 100"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "dim_merchant",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [],
+      "business_description": "This model provides a summary of merchant transactions, including total revenue, failure rates, and transaction counts. It aggregates data from completed transactions and calculates failure rates based on transaction statuses.",
+      "who_should_access": "Finance and Operations teams",
+      "who_should_NOT_access": "Marketing and HR teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that the 'stg_transactions' table is properly anonymized and that access controls are in place to prevent unauthorized access to sensitive financial data.",
+      "model_name": "mart_transaction_summary",
+      "sql_lines": 39,
+      "analysed_at": "2026-06-03T06:55:28.869310+00:00"
+    }
+  },
+  "three_questions": {
+    "q1_most_damaging_column": {
+      "column": "mart_merchant_performance.customer_id",
+      "why": "A malicious actor could use the 'customer_id' column to identify and target specific customers, leading to identity theft and fraud. This column is highly sensitive due to its direct link to personal information."
+    },
+    "q2_hacker_target_table": {
+      "table": "stg_transactions",
+      "why": "A hacker with SELECT access to the'stg_transactions' table could extract detailed transaction data, including amounts and statuses. This could be used to manipulate financial records, commit fraud, or gain insights into customer spending habits.",
+      "damage_estimate": "significant harm"
+    },
+    "q3_europe_expansion": {
+      "columns_needing_consent": [
+        "dim_merchant.email",
+        "dim_merchant.phone_number",
+        "dim_merchant.address"
+      ],
+      "why": "These columns contain personal information that requires GDPR consent for processing. They are essential for direct communication and location-based services.",
+      "columns_already_compliant": [
+        "dim_merchant.merchant_name (no personal information)"
+      ]
+    }
+  },
+  "pii_surface_area": [
+    {
+      "table": "mart_merchant_performance",
+      "column": "customer_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft and fraud."
+    }
+  ],
+  "summary": {
+    "total_tables": 2,
+    "total_pii_columns": 1,
+    "critical_columns": 0,
+    "high_columns": 1,
+    "analysis_seconds": 10.9
+  }
+}
