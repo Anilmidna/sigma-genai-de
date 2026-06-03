@@ -203,7 +203,7 @@ python lab/investigate/check_snowflake.py  # 0 rows for disaster window
 # PHASE 1 — WIRE THE PLATFORM
 ## 11:00 AM – 11:45 AM
 
-> Goal: All 9 Lambda tools deployed. Clean data flows from Kinesis to Snowflake.
+> Goal: All 10 Lambda tools deployed. Clean data flows from S3 to Snowflake.
 > Agents are ready. You understand what each tool does before the disaster hits.
 
 ---
@@ -283,7 +283,7 @@ Querying MCP server for available tools...
 
 Tools available to agents:
   [1] check_cloudwatch_metrics
-      Lists Lambda errors, Firehose delivery failures, Kinesis throttles
+      Lists Lambda errors, Lambda version history, S3 file counts
   [2] get_kinesis_records
       Replays records from a shard at a given timestamp
   [3] query_snowflake
@@ -453,7 +453,7 @@ python lab/trigger/pipeline_trigger.py \
   --bucket sigma-datatech-<your-team-name> \
   --message "Dashboard shows 40,000 transactions today but yesterday showed 1,20,000. \
              80,000 records are missing. Pipeline shows healthy in all monitors — \
-             Lambda green, Kinesis green, Firehose green, S3 has files. \
+             Lambda green, S3 has files. \
              Investigate root cause, recover the missing records, prevent recurrence."
 ```
 
@@ -466,7 +466,7 @@ Watch your terminal. The supervisor is streaming its reasoning:
 [13:31:04] SUPERVISOR: Knowledge base: 0 similar incidents found (first occurrence).
 [13:31:04] SUPERVISOR: Delegating to Forensics Agent, Impact Agent in parallel...
 
-[13:31:05] FORENSICS: Checking CloudWatch metrics — Lambda, Firehose, Kinesis...
+[13:31:05] FORENSICS: Checking CloudWatch metrics — Lambda version history, S3 files...
 [13:31:05] IMPACT:    Querying Snowflake — expected vs actual row counts...
 
 [13:31:08] FORENSICS: Lambda sigma-data-producer — version changed at 02:11 UTC
@@ -476,7 +476,7 @@ Watch your terminal. The supervisor is streaming its reasoning:
 [13:31:09] FORENSICS: COPY INTO ran on malformed JSON — loaded 0 rows. Root cause confirmed.
 
 [13:31:09] IMPACT: 847 records missing in failure window (02:11–02:15 UTC)
-[13:31:09] IMPACT: Snowflake row count gap confirmed — records sent to Kinesis, never loaded
+[13:31:09] IMPACT: Snowflake row count gap confirmed — files in S3 Bronze, never loaded
 [13:31:10] IMPACT: Revenue impact: ₹4,72,340 (consequence of missing records)
 [13:31:10] IMPACT: SLA check — QuickMart threshold ₹50,000 → BREACHED (₹1,21,450 missing)
 [13:31:10] IMPACT: FuelPlus threshold ₹1,00,000 → not breached (₹87,200 missing)
@@ -503,7 +503,7 @@ Watch your terminal. The supervisor is streaming its reasoning:
 [13:31:20] HARDENING: Alarm sigma-snowflake-zero-load created. Active.
 [13:31:21] HARDENING: Creating alarm — Lambda version change on sigma-data-producer...
 [13:31:22] HARDENING: Alarm sigma-lambda-version-change created. Active.
-[13:31:23] HARDENING: Creating alarm — Kinesis→Snowflake row count divergence > 5%...
+[13:31:23] HARDENING: Creating alarm — S3→Snowflake row count divergence > 5%...
 [13:31:24] HARDENING: Alarm sigma-pipeline-row-divergence created. Active.
 
 [13:31:24] SUPERVISOR: Hardening complete. Delegating to Incident Report Agent...
@@ -553,7 +553,7 @@ QuickMart SLA breach confirmed. Root cause: Lambda v2 deploy at 02:11 UTC.
 ## Timeline
 02:11 UTC  Lambda sigma-data-producer auto-deployed to v2
 02:11 UTC  v2 outputs merchant_nm (not merchant_name) + DD-MM-YYYY dates
-02:11 UTC  Firehose delivers malformed JSON to S3
+02:11 UTC  sigma-data-producer Lambda v2 writes malformed JSON files to S3
 02:12 UTC  Snowflake COPY INTO runs — loads 0 rows (schema mismatch)
 02:12 UTC  Existing CloudWatch alarm does not fire (threshold too high)
 09:03 UTC  Business analyst notices ₹0 GMV on dashboard
@@ -575,7 +575,7 @@ Notification due: Merchant relations team within 2 hours of detection
 
 ## Fix Applied
 13:31:11 UTC  Lambda rolled back to v1 (stable)
-13:31:15 UTC  824 records replayed from Kinesis with field mapping + date fix
+13:31:15 UTC  824 records replayed from S3 Bronze with field mapping + date fix
 13:31:17 UTC  23 records quarantined (null transaction_ids — separate issue)
 13:31:18 UTC  Snowflake GMV restored to ₹4,69,890
 
@@ -583,7 +583,7 @@ Notification due: Merchant relations team within 2 hours of detection
 3 CloudWatch alarms created and active:
   sigma-snowflake-zero-load        → fires if COPY INTO loads 0 rows twice
   sigma-lambda-version-change      → fires on any Lambda alias change
-  sigma-pipeline-row-divergence    → fires if Kinesis/Snowflake row gap > 5%
+  sigma-pipeline-row-divergence    → fires if S3/Snowflake row gap > 5%
 
 Recommended: Lambda deploy policy requiring canary traffic (10% for 5 min)
 before full rollout. Proposal in deploy/lambda_canary_policy.json
@@ -695,15 +695,15 @@ a fintech regulator would require before you deploy this in production.
 
 ### Step 5 — Extend the Forensics Agent
 
-The Forensics Agent currently checks: Lambda version history, Firehose delivery logs,
+The Forensics Agent currently checks: Lambda version history, S3 file contents,
 Snowflake COPY INTO history, S3 file contents.
 
 **Your task:** Add one new detection capability.
 
 Choose one:
-- **Option A:** Detect Kinesis throttling (PutRecord.Throttled > 0 in last 60 min)
-- **Option B:** Detect S3 zero-byte files (files exist but size = 0)
-- **Option C:** Detect Snowflake warehouse suspension (query ran but warehouse was suspended)
+- **Option A:** Detect S3 zero-byte files (files exist but size = 0)
+- **Option B:** Detect Lambda throttles (concurrency limit hit)
+- **Option C:** Detect Lambda duration spikes (execution time > 10 seconds)
 
 Add your detection to `lab/tools/check_cloudwatch.py`.
 Test it:
@@ -786,7 +786,7 @@ One question per team. Verbal. No laptop. Wheel of Names picks who answers.
 **Class Discussion — 10 minutes, open debate, no single right answer:**
 
 > *"AWS Step Functions could run this exact sequence as a deterministic workflow —
-> CloudWatch check → Kinesis replay → Lambda rollback → alarm creation.
+> CloudWatch check → S3 file replay → Lambda rollback → alarm creation.
 > No LLM. No reasoning. Cheaper. Faster. More predictable.
 >
 > Where exactly did the agents add value that Step Functions cannot?
@@ -806,7 +806,7 @@ Agents handle the ones you did not anticipate.
 
 ```
 Production Infrastructure:
-  AWS Kinesis + Firehose → S3 (event-driven ingestion)
+  S3 Bronze (data landing zone)
   EventBridge → Lambda (serverless trigger)
   Snowflake (warehouse destination)
   SNS (real alerting — your phone received it)
@@ -816,7 +816,7 @@ Production Infrastructure:
   Supervisor Agent    (multi-agent orchestration)
   Forensics Agent     (cross-service root cause analysis)
   Impact Agent        (business impact + SLA breach detection)
-  Recovery Agent      (Kinesis replay with idempotency)
+  Recovery Agent      (S3 file replay with idempotency)
   Rollback Agent      (Lambda version management)
   Hardening Agent     (automated alarm creation — see Debrief for prod caveats)
   Incident Report     (CTO-ready post-mortem in S3)
