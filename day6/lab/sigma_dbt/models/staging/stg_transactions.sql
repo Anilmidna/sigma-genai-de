@@ -18,3 +18,4 @@ WITH cleaned_transactions AS (
 )
 
 SELECT * FROM cleaned_transactions
+fa
