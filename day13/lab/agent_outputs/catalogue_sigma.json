@@ -1,0 +1,1361 @@
+{
+  "mystery_folder": "sigma_datatech",
+  "industry_analysis": {
+    "industry": "Sigma DataTech \u2014 Fintech payments platform",
+    "what_they_do": "Processes merchant transactions in India. Tracks GMV, SLA breaches, and customer payments.",
+    "top_clues": [
+      "merchant_name",
+      "transaction_id",
+      "gmv_inr"
+    ],
+    "confidence": "HIGH"
+  },
+  "generated_at": "2026-06-03T06:36:16.807409+00:00",
+  "tables": {
+    "dim_customers": {
+      "source_tables": [
+        "stg_customers"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "customer_id",
+          "source_table": "stg_customers",
+          "source_column": "customer_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "account_tier",
+          "source_table": "stg_customers",
+          "source_column": "account_tier",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "kyc_status",
+          "source_table": "stg_customers",
+          "source_column": "kyc_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "birth_month",
+          "source_table": "stg_customers",
+          "source_column": "date_of_birth",
+          "transformation": "DATE_TRUNC('month')"
+        },
+        {
+          "target_column": "age_years",
+          "source_table": "stg_customers",
+          "source_column": "date_of_birth",
+          "transformation": "DATEDIFF('year', date_of_birth, CURRENT_DATE())"
+        },
+        {
+          "target_column": "registration_date",
+          "source_table": "stg_customers",
+          "source_column": "registration_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "last_login_at",
+          "source_table": "stg_customers",
+          "source_column": "last_login_at",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_active",
+          "source_table": "stg_customers",
+          "source_column": "is_active",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "customer_email_hash",
+          "source_table": "stg_customers",
+          "source_column": "customer_email",
+          "transformation": "SHA2(customer_email, 256)"
+        },
+        {
+          "target_column": "customer_phone_hash",
+          "source_table": "stg_customers",
+          "source_column": "customer_phone",
+          "transformation": "SHA2(customer_phone, 256)"
+        },
+        {
+          "target_column": "pan_hash",
+          "source_table": "stg_customers",
+          "source_column": "pan_number",
+          "transformation": "SHA2(pan_number, 256)"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "stg_customers",
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "customer_email_hash",
+          "pii_type": "EMAIL",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to phishing attacks targeting the customer."
+        },
+        {
+          "column": "customer_phone_hash",
+          "pii_type": "PHONE",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unwanted contact or social engineering attacks."
+        },
+        {
+          "column": "pan_hash",
+          "pii_type": "FINANCIAL",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to financial fraud or identity theft."
+        }
+      ],
+      "business_description": "This table provides a de-identified customer master data for analytics purposes. It includes hashed versions of sensitive personal information to ensure privacy while enabling business insights.",
+      "who_should_access": "Analytics and Marketing teams",
+      "who_should_NOT_access": "General business users, external vendors",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that access to raw PII is restricted to Finance and Compliance teams only.",
+      "model_name": "dim_customers",
+      "sql_lines": 23,
+      "analysed_at": "2026-06-03T06:36:20.772587+00:00"
+    },
+    "dim_merchants": {
+      "source_tables": [
+        "stg_merchants",
+        "int_merchant_performance"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "merchant_id",
+          "source_table": "stg_merchants",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "stg_merchants",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "business_category",
+          "source_table": "stg_merchants",
+          "source_column": "business_category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_city",
+          "source_table": "stg_merchants",
+          "source_column": "merchant_city",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_state",
+          "source_table": "stg_merchants",
+          "source_column": "merchant_state",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gstin",
+          "source_table": "stg_merchants",
+          "source_column": "gstin",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "contact_email",
+          "source_table": "stg_merchants",
+          "source_column": "contact_email",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "onboarding_date",
+          "source_table": "stg_merchants",
+          "source_column": "onboarding_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "contract_start_date",
+          "source_table": "stg_merchants",
+          "source_column": "contract_start_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "contract_end_date",
+          "source_table": "stg_merchants",
+          "source_column": "contract_end_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "sla_threshold_inr",
+          "source_table": "stg_merchants",
+          "source_column": "sla_threshold_inr",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_active",
+          "source_table": "stg_merchants",
+          "source_column": "is_active",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "current_tier",
+          "source_table": "int_merchant_performance",
+          "source_column": "merchant_tier",
+          "transformation": "COALESCE(p.merchant_tier, 'BRONZE')"
+        },
+        {
+          "target_column": "gmv_30d_inr",
+          "source_table": "int_merchant_performance",
+          "source_column": "gmv_30d_inr",
+          "transformation": "COALESCE(p.gmv_30d_inr, 0)"
+        },
+        {
+          "target_column": "failure_rate_30d_pct",
+          "source_table": "int_merchant_performance",
+          "source_column": "avg_failure_rate_pct",
+          "transformation": "COALESCE(p.avg_failure_rate_pct, 0)"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "stg_merchants",
+          "source_column": "_loaded_at",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "contact_email",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to email addresses can lead to phishing attacks and identity theft."
+        },
+        {
+          "column": "gstin",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "Exposure of GSTIN can lead to fraudulent activities and tax evasion."
+        }
+      ],
+      "business_description": "This table contains master data for merchants, including their business category, contact information, and performance metrics. It is designed to be a slowly changing dimension, enriched with performance data from another table.",
+      "who_should_access": "The Sales and Marketing teams should be allowed to query this table.",
+      "who_should_NOT_access": "The IT and HR teams should be explicitly blocked from accessing this table.",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that access to this table is restricted to authorized personnel only, and that data is encrypted both at rest and in transit.",
+      "model_name": "dim_merchants",
+      "sql_lines": 26,
+      "analysed_at": "2026-06-03T06:36:25.509440+00:00"
+    },
+    "fct_daily_revenue": {
+      "source_tables": [
+        "int_daily_gmv"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "transaction_date",
+          "source_table": "int_daily_gmv",
+          "source_column": "transaction_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_gmv_inr",
+          "source_table": "int_daily_gmv",
+          "source_column": "gmv_inr",
+          "transformation": "SUM"
+        },
+        {
+          "target_column": "total_transactions",
+          "source_table": "int_daily_gmv",
+          "source_column": "transaction_count",
+          "transformation": "SUM"
+        },
+        {
+          "target_column": "active_merchants",
+          "source_table": "int_daily_gmv",
+          "source_column": "merchant_id",
+          "transformation": "COUNT(DISTINCT)"
+        },
+        {
+          "target_column": "total_failed_inr",
+          "source_table": "int_daily_gmv",
+          "source_column": "failed_amount_inr",
+          "transformation": "SUM"
+        },
+        {
+          "target_column": "avg_failure_rate_pct",
+          "source_table": "int_daily_gmv",
+          "source_column": "failure_rate_pct",
+          "transformation": "AVG, ROUND(2)"
+        },
+        {
+          "target_column": "gmv_day_on_day_change",
+          "source_table": "int_daily_gmv",
+          "source_column": "gmv_inr",
+          "transformation": "SUM - LAG(SUM) OVER (ORDER BY transaction_date)"
+        },
+        {
+          "target_column": "gmv_growth_pct",
+          "source_table": "int_daily_gmv",
+          "source_column": "gmv_inr",
+          "transformation": "ROUND(((SUM - LAG(SUM) OVER (ORDER BY transaction_date)) / NULLIF(LAG(SUM) OVER (ORDER BY transaction_date), 0) * 100), 2)"
+        }
+      ],
+      "pii_columns": [],
+      "business_description": "This table provides a daily summary of revenue metrics, including total gross merchandise value (GMV), transaction count, active merchants, failed transaction amounts, average failure rate, and daily GMV changes and growth percentages.",
+      "who_should_access": "Finance and executive dashboard teams",
+      "who_should_NOT_access": "Marketing and HR teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that the table is properly secured and access is limited to authorized personnel due to the sensitive nature of financial data.",
+      "model_name": "fct_daily_revenue",
+      "sql_lines": 21,
+      "analysed_at": "2026-06-03T06:36:28.550949+00:00"
+    },
+    "fct_transactions": {
+      "source_tables": [
+        "stg_transactions",
+        "stg_customers",
+        "stg_merchants"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "transaction_id",
+          "source_table": "stg_transactions",
+          "source_column": "transaction_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "transaction_date",
+          "source_table": "stg_transactions",
+          "source_column": "transaction_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "customer_id",
+          "source_table": "stg_transactions",
+          "source_column": "customer_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "customer_tier",
+          "source_table": "stg_customers",
+          "source_column": "account_tier",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_id",
+          "source_table": "stg_transactions",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "stg_merchants",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "business_category",
+          "source_table": "stg_merchants",
+          "source_column": "business_category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_city",
+          "source_table": "stg_merchants",
+          "source_column": "merchant_city",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "amount",
+          "source_table": "stg_transactions",
+          "source_column": "amount",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "currency",
+          "source_table": "stg_transactions",
+          "source_column": "currency",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payment_method",
+          "source_table": "stg_transactions",
+          "source_column": "payment_method",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "transaction_status",
+          "source_table": "stg_transactions",
+          "source_column": "transaction_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "failure_reason",
+          "source_table": "stg_transactions",
+          "source_column": "failure_reason",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gmv_contribution",
+          "source_table": "stg_transactions",
+          "source_column": "amount",
+          "transformation": "CASE WHEN transaction_status = 'completed' THEN amount ELSE 0 END"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "stg_transactions",
+          "source_column": "_loaded_at",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "customer_id",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft and phishing attacks."
+        },
+        {
+          "column": "merchant_city",
+          "pii_type": "LOCATION",
+          "severity": "LOW",
+          "real_world_risk": "If leaked, it could provide information about the merchant's location."
+        }
+      ],
+      "business_description": "This table contains enriched transaction events, serving as the primary source for reporting on transaction data. It combines transaction details with customer and merchant information to provide a comprehensive view of transaction activities.",
+      "who_should_access": "Finance, Reporting, and Compliance teams",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is tightly controlled and monitored due to the presence of PII data.",
+      "model_name": "fct_transactions",
+      "sql_lines": 30,
+      "analysed_at": "2026-06-03T06:36:33.809379+00:00"
+    },
+    "int_daily_gmv": {
+      "source_tables": [
+        "stg_transactions",
+        "stg_merchants"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "transaction_date",
+          "source_table": "stg_transactions",
+          "source_column": "transaction_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_id",
+          "source_table": "stg_transactions",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "stg_merchants",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "business_category",
+          "source_table": "stg_merchants",
+          "source_column": "business_category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "transaction_count",
+          "source_table": "stg_transactions",
+          "source_column": "transaction_id",
+          "transformation": "COUNT(t.transaction_id)"
+        },
+        {
+          "target_column": "gmv_inr",
+          "source_table": "stg_transactions",
+          "source_column": "amount",
+          "transformation": "SUM(CASE WHEN t.transaction_status = 'completed' THEN t.amount ELSE 0 END)"
+        },
+        {
+          "target_column": "failed_amount_inr",
+          "source_table": "stg_transactions",
+          "source_column": "amount",
+          "transformation": "SUM(CASE WHEN t.transaction_status = 'failed' THEN t.amount ELSE 0 END)"
+        },
+        {
+          "target_column": "failed_count",
+          "source_table": "stg_transactions",
+          "source_column": "transaction_id",
+          "transformation": "COUNT(CASE WHEN t.transaction_status = 'failed' THEN 1 END)"
+        },
+        {
+          "target_column": "failure_rate_pct",
+          "source_table": "stg_transactions",
+          "source_column": "transaction_id",
+          "transformation": "ROUND(COUNT(CASE WHEN t.transaction_status = 'failed' THEN 1 END) * 100.0 / NULLIF(COUNT(t.transaction_id), 0), 2)"
+        }
+      ],
+      "pii_columns": [],
+      "business_description": "This table provides a daily summary of gross merchandise value (GMV) by merchant, including transaction counts, completed and failed transaction amounts, and the failure rate of transactions.",
+      "who_should_access": "Finance and Operations teams",
+      "who_should_NOT_access": "Marketing and HR teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that the transaction data is anonymized and aggregated to prevent individual user identification.",
+      "model_name": "int_daily_gmv",
+      "sql_lines": 24,
+      "analysed_at": "2026-06-03T06:36:37.265362+00:00"
+    },
+    "int_merchant_performance": {
+      "source_tables": [
+        "int_daily_gmv"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "merchant_id",
+          "source_table": "int_daily_gmv",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "int_daily_gmv",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "business_category",
+          "source_table": "int_daily_gmv",
+          "source_column": "business_category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gmv_30d_inr",
+          "source_table": "int_daily_gmv",
+          "source_column": "gmv_inr",
+          "transformation": "SUM"
+        },
+        {
+          "target_column": "transactions_30d",
+          "source_table": "int_daily_gmv",
+          "source_column": "transaction_count",
+          "transformation": "SUM"
+        },
+        {
+          "target_column": "avg_failure_rate_pct",
+          "source_table": "int_daily_gmv",
+          "source_column": "failure_rate_pct",
+          "transformation": "AVG"
+        },
+        {
+          "target_column": "last_transaction_date",
+          "source_table": "int_daily_gmv",
+          "source_column": "transaction_date",
+          "transformation": "MAX"
+        },
+        {
+          "target_column": "merchant_tier",
+          "source_table": "int_daily_gmv",
+          "source_column": "gmv_inr",
+          "transformation": "CASE WHEN SUM(gmv_inr) >= 1000000 THEN 'PLATINUM' WHEN SUM(gmv_inr) >= 500000 THEN 'GOLD' WHEN SUM(gmv_inr) >= 100000 THEN 'SILVER' ELSE 'BRONZE'"
+        }
+      ],
+      "pii_columns": [],
+      "business_description": "This table provides a summary of merchant performance metrics over the last 30 days, including gross merchandise value, transaction count, failure rate, and the last transaction date. It also categorizes merchants into tiers based on their total gross merchandise value.",
+      "who_should_access": "Finance and Business Intelligence teams",
+      "who_should_NOT_access": "Marketing and Customer Support teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that the source table 'int_daily_gmv' is properly secured and access is restricted to authorized personnel only.",
+      "model_name": "int_merchant_performance",
+      "sql_lines": 22,
+      "analysed_at": "2026-06-03T06:36:42.433904+00:00"
+    },
+    "mart_merchant_performance": {
+      "source_tables": [
+        "stg_fact_transactions",
+        "dim_merchant"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "merchant_id",
+          "source_table": "stg_fact_transactions",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "dim_merchant",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "category",
+          "source_table": "dim_merchant",
+          "source_column": "category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "city",
+          "source_table": "dim_merchant",
+          "source_column": "city",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "onboarded_date",
+          "source_table": "dim_merchant",
+          "source_column": "onboarded_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_transactions",
+          "source_table": "filtered_transactions",
+          "source_column": "transaction_id",
+          "transformation": "COUNT"
+        },
+        {
+          "target_column": "failed_count",
+          "source_table": "filtered_transactions",
+          "source_column": "status",
+          "transformation": "COUNT(CASE WHEN ft.status = 'FAILED' THEN 1 END)"
+        },
+        {
+          "target_column": "total_revenue",
+          "source_table": "filtered_transactions",
+          "source_column": "amount",
+          "transformation": "SUM(CASE WHEN ft.status = 'COMPLETED' THEN ft.amount ELSE 0 END)"
+        },
+        {
+          "target_column": "avg_transaction_value",
+          "source_table": "filtered_transactions",
+          "source_column": "amount",
+          "transformation": "AVG(CASE WHEN ft.status = 'COMPLETED' THEN ft.amount ELSE NULL END)"
+        },
+        {
+          "target_column": "unique_customers",
+          "source_table": "filtered_transactions",
+          "source_column": "customer_id",
+          "transformation": "COUNT(DISTINCT ft.customer_id)"
+        },
+        {
+          "target_column": "failure_rate_pct",
+          "source_table": "aggregated_metrics",
+          "source_column": "failed_count, total_transactions",
+          "transformation": "(am.failed_count::FLOAT / am.total_transactions) * 100"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "merchant_id",
+          "pii_type": "GOV_ID",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unauthorized access to merchant's account."
+        },
+        {
+          "column": "customer_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft and fraud."
+        }
+      ],
+      "business_description": "This model aggregates merchant performance data, including total transactions, failed transactions, total revenue, average transaction value, and unique customers. It combines transaction data with merchant details to provide a comprehensive view of merchant performance.",
+      "who_should_access": "Finance and Operations teams",
+      "who_should_NOT_access": "Marketing and HR teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure proper access controls are in place to protect PII data.",
+      "model_name": "mart_merchant_performance",
+      "sql_lines": 106,
+      "analysed_at": "2026-06-03T06:36:46.274945+00:00"
+    },
+    "stg_customers": {
+      "source_tables": [
+        "raw.customers"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "customer_id",
+          "source_table": "raw.customers",
+          "source_column": "customer_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "first_name",
+          "source_table": "raw.customers",
+          "source_column": "first_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "last_name",
+          "source_table": "raw.customers",
+          "source_column": "last_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "customer_email",
+          "source_table": "raw.customers",
+          "source_column": "customer_email",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "customer_phone",
+          "source_table": "raw.customers",
+          "source_column": "customer_phone",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "date_of_birth",
+          "source_table": "raw.customers",
+          "source_column": "date_of_birth",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "home_address",
+          "source_table": "raw.customers",
+          "source_column": "home_address",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "pan_number",
+          "source_table": "raw.customers",
+          "source_column": "pan_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "kyc_status",
+          "source_table": "raw.customers",
+          "source_column": "kyc_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "registration_date",
+          "source_table": "raw.customers",
+          "source_column": "registration_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "last_login_at",
+          "source_table": "raw.customers",
+          "source_column": "last_login_at",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "account_tier",
+          "source_table": "raw.customers",
+          "source_column": "account_tier",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_active",
+          "source_table": "raw.customers",
+          "source_column": "is_active",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "N/A",
+          "source_column": "N/A",
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "first_name",
+          "pii_type": "NAME",
+          "severity": "MEDIUM",
+          "real_world_risk": "Exposure of first names could lead to social engineering attacks."
+        },
+        {
+          "column": "last_name",
+          "pii_type": "NAME",
+          "severity": "MEDIUM",
+          "real_world_risk": "Exposure of last names could lead to social engineering attacks."
+        },
+        {
+          "column": "customer_email",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "Exposure of email addresses could lead to phishing attacks and spamming."
+        },
+        {
+          "column": "customer_phone",
+          "pii_type": "PHONE",
+          "severity": "MEDIUM",
+          "real_world_risk": "Exposure of phone numbers could lead to harassment and identity theft."
+        },
+        {
+          "column": "date_of_birth",
+          "pii_type": "BIOMETRIC",
+          "severity": "HIGH",
+          "real_world_risk": "Exposure of date of birth could lead to identity theft and fraud."
+        },
+        {
+          "column": "home_address",
+          "pii_type": "ADDRESS",
+          "severity": "HIGH",
+          "real_world_risk": "Exposure of home addresses could lead to physical harm and identity theft."
+        },
+        {
+          "column": "pan_number",
+          "pii_type": "GOV_ID",
+          "severity": "CRITICAL",
+          "real_world_risk": "Exposure of PAN numbers could lead to severe identity theft and financial fraud."
+        }
+      ],
+      "business_description": "This table contains master data for customers, sourced from the raw CRM export. It includes personal information, account status, and contact details.",
+      "who_should_access": "Customer Support, Account Management, and Data Analysts",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure proper access controls and encryption are in place due to the presence of highly sensitive PII data.",
+      "model_name": "stg_customers",
+      "sql_lines": 22,
+      "analysed_at": "2026-06-03T06:36:50.586076+00:00"
+    },
+    "stg_events": {
+      "source_tables": [
+        "raw.events"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "event_id",
+          "source_table": "raw.events",
+          "source_column": "event_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "customer_id",
+          "source_table": "raw.events",
+          "source_column": "customer_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "event_type",
+          "source_table": "raw.events",
+          "source_column": "event_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "event_timestamp",
+          "source_table": "raw.events",
+          "source_column": "event_timestamp",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "session_id",
+          "source_table": "raw.events",
+          "source_column": "session_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "device_type",
+          "source_table": "raw.events",
+          "source_column": "device_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "os_version",
+          "source_table": "raw.events",
+          "source_column": "os_version",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "app_version",
+          "source_table": "raw.events",
+          "source_column": "app_version",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "screen_name",
+          "source_table": "raw.events",
+          "source_column": "screen_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "latitude",
+          "source_table": "raw.events",
+          "source_column": "latitude",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "longitude",
+          "source_table": "raw.events",
+          "source_column": "longitude",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "customer_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft and unauthorized access to personal accounts."
+        },
+        {
+          "column": "latitude",
+          "pii_type": "LOCATION",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could reveal the physical location of the user, potentially leading to privacy invasion."
+        },
+        {
+          "column": "longitude",
+          "pii_type": "LOCATION",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could reveal the physical location of the user, potentially leading to privacy invasion."
+        }
+      ],
+      "business_description": "This table captures user behavior events from the mobile app analytics, including event IDs, customer IDs, event types, timestamps, session IDs, device types, OS versions, app versions, screen names, and geographic coordinates.",
+      "who_should_access": "Data analysts and data scientists who need to analyze user behavior for product improvement and marketing strategies.",
+      "who_should_NOT_access": "Marketing and sales teams who do not require access to raw event data for their operations.",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure proper anonymization and encryption of PII data, and restrict access to authorized personnel only.",
+      "model_name": "stg_events",
+      "sql_lines": 20,
+      "analysed_at": "2026-06-03T06:36:55.804249+00:00"
+    },
+    "stg_merchants": {
+      "source_tables": [
+        "raw.merchants"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "merchant_id",
+          "source_table": "raw.merchants",
+          "source_column": "merchant_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_name",
+          "source_table": "raw.merchants",
+          "source_column": "merchant_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "business_category",
+          "source_table": "raw.merchants",
+          "source_column": "business_category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_city",
+          "source_table": "raw.merchants",
+          "source_column": "merchant_city",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "merchant_state",
+          "source_table": "raw.merchants",
+          "source_column": "merchant_state",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gstin",
+          "source_table": "raw.merchants",
+          "source_column": "gstin",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "bank_account_number",
+          "source_table": "raw.merchants",
+          "source_column": "bank_account_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "ifsc_code",
+          "source_table": "raw.merchants",
+          "source_column": "ifsc_code",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "contact_email",
+          "source_table": "raw.merchants",
+          "source_column": "contact_email",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "contact_phone",
+          "source_table": "raw.merchants",
+          "source_column": "contact_phone",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "onboarding_date",
+          "source_table": "raw.merchants",
+          "source_column": "onboarding_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "contract_start_date",
+          "source_table": "raw.merchants",
+          "source_column": "contract_start_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "contract_end_date",
+          "source_table": "raw.merchants",
+          "source_column": "contract_end_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "sla_threshold_inr",
+          "source_table": "raw.merchants",
+          "source_column": "sla_threshold_inr",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_active",
+          "source_table": "raw.merchants",
+          "source_column": "is_active",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "merchant_name",
+          "pii_type": "NAME",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to identity theft or targeted harassment."
+        },
+        {
+          "column": "contact_email",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to phishing attacks, spam, and identity theft."
+        },
+        {
+          "column": "contact_phone",
+          "pii_type": "PHONE",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unwanted communications and potential harassment."
+        },
+        {
+          "column": "gstin",
+          "pii_type": "GOV_ID",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to tax fraud and identity theft."
+        },
+        {
+          "column": "bank_account_number",
+          "pii_type": "FINANCIAL",
+          "severity": "CRITICAL",
+          "real_world_risk": "If leaked, it could lead to financial fraud and theft."
+        },
+        {
+          "column": "ifsc_code",
+          "pii_type": "FINANCIAL",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unauthorized transactions."
+        }
+      ],
+      "business_description": "This table contains staging data for merchant onboarding from the partner portal. It includes merchant details, contact information, and financial account details.",
+      "who_should_access": "Finance and Compliance teams",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is tightly controlled and monitored due to the presence of sensitive financial and personal information.",
+      "model_name": "stg_merchants",
+      "sql_lines": 24,
+      "analysed_at": "2026-06-03T06:37:00.459330+00:00"
+    },
+    "stg_transactions": {
+      "source_tables": [
+        "fact_transactions"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "transaction_id",
+          "source_table": "fact_transactions",
+          "source_column": "transaction_id",
+          "transformation": "LOWER"
+        },
+        {
+          "target_column": "amount",
+          "source_table": "fact_transactions",
+          "source_column": "amount",
+          "transformation": "CAST(DECIMAL(10, 2))"
+        },
+        {
+          "target_column": "status",
+          "source_table": "fact_transactions",
+          "source_column": "status",
+          "transformation": "LOWER"
+        },
+        {
+          "target_column": "merchant_id",
+          "source_table": "fact_transactions",
+          "source_column": "merchant_id",
+          "transformation": "LOWER"
+        },
+        {
+          "target_column": "customer_id",
+          "source_table": "fact_transactions",
+          "source_column": "customer_id",
+          "transformation": "LOWER"
+        },
+        {
+          "target_column": "transaction_date",
+          "source_table": "fact_transactions",
+          "source_column": "transaction_date",
+          "transformation": "CAST(DATE)"
+        },
+        {
+          "target_column": "payment_method",
+          "source_table": "fact_transactions",
+          "source_column": "payment_method",
+          "transformation": "LOWER"
+        },
+        {
+          "target_column": "loaded_at",
+          "source_table": "N/A",
+          "source_column": "N/A",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "customer_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft and fraud."
+        },
+        {
+          "column": "merchant_id",
+          "pii_type": "GOV_ID",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unauthorized access to merchant accounts."
+        }
+      ],
+      "business_description": "This model cleans and prepares transaction data for further analysis. It filters out test data and ensures all text fields are lowercased and dates are properly formatted.",
+      "who_should_access": "Finance and Data Engineering teams",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure proper access controls are in place due to the presence of PII data.",
+      "model_name": "stg_transactions",
+      "sql_lines": 69,
+      "analysed_at": "2026-06-03T06:37:03.420493+00:00"
+    }
+  },
+  "three_questions": {
+    "q1_most_damaging_column": {
+      "column": "dim_customers.pan_hash",
+      "why": "A malicious actor could use the pan_hash column to attempt to reverse-engineer the PAN number, leading to financial fraud or identity theft. This column contains hashed payment card numbers, which, if compromised, could be used to make unauthorized transactions."
+    },
+    "q2_hacker_target_table": {
+      "table": "dim_merchants",
+      "why": "With SELECT access to the dim_merchants table, a hacker could obtain sensitive business information such as merchant contact emails and GSTIN numbers. This information could be used for phishing attacks, identity theft, and fraudulent activities.",
+      "damage_estimate": "significant harm"
+    },
+    "q3_europe_expansion": {
+      "columns_needing_consent": [
+        "dim_customers.customer_email_hash",
+        "dim_customers.customer_phone_hash",
+        "dim_merchants.contact_email"
+      ],
+      "why": "These columns contain personal information that requires explicit consent under GDPR for processing. They include email addresses and phone numbers, which are considered sensitive personal data.",
+      "columns_already_compliant": [
+        "dim_customers.pan_hash (hashed and considered pseudonymized)"
+      ]
+    }
+  },
+  "pii_surface_area": [
+    {
+      "table": "dim_customers",
+      "column": "customer_email_hash",
+      "pii_type": "EMAIL",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to phishing attacks targeting the customer."
+    },
+    {
+      "table": "dim_customers",
+      "column": "customer_phone_hash",
+      "pii_type": "PHONE",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unwanted contact or social engineering attacks."
+    },
+    {
+      "table": "dim_customers",
+      "column": "pan_hash",
+      "pii_type": "FINANCIAL",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to financial fraud or identity theft."
+    },
+    {
+      "table": "dim_merchants",
+      "column": "contact_email",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to email addresses can lead to phishing attacks and identity theft."
+    },
+    {
+      "table": "dim_merchants",
+      "column": "gstin",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "Exposure of GSTIN can lead to fraudulent activities and tax evasion."
+    },
+    {
+      "table": "fct_transactions",
+      "column": "customer_id",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft and phishing attacks."
+    },
+    {
+      "table": "fct_transactions",
+      "column": "merchant_city",
+      "pii_type": "LOCATION",
+      "severity": "LOW",
+      "risk": "If leaked, it could provide information about the merchant's location."
+    },
+    {
+      "table": "mart_merchant_performance",
+      "column": "merchant_id",
+      "pii_type": "GOV_ID",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unauthorized access to merchant's account."
+    },
+    {
+      "table": "mart_merchant_performance",
+      "column": "customer_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft and fraud."
+    },
+    {
+      "table": "stg_customers",
+      "column": "first_name",
+      "pii_type": "NAME",
+      "severity": "MEDIUM",
+      "risk": "Exposure of first names could lead to social engineering attacks."
+    },
+    {
+      "table": "stg_customers",
+      "column": "last_name",
+      "pii_type": "NAME",
+      "severity": "MEDIUM",
+      "risk": "Exposure of last names could lead to social engineering attacks."
+    },
+    {
+      "table": "stg_customers",
+      "column": "customer_email",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "Exposure of email addresses could lead to phishing attacks and spamming."
+    },
+    {
+      "table": "stg_customers",
+      "column": "customer_phone",
+      "pii_type": "PHONE",
+      "severity": "MEDIUM",
+      "risk": "Exposure of phone numbers could lead to harassment and identity theft."
+    },
+    {
+      "table": "stg_customers",
+      "column": "date_of_birth",
+      "pii_type": "BIOMETRIC",
+      "severity": "HIGH",
+      "risk": "Exposure of date of birth could lead to identity theft and fraud."
+    },
+    {
+      "table": "stg_customers",
+      "column": "home_address",
+      "pii_type": "ADDRESS",
+      "severity": "HIGH",
+      "risk": "Exposure of home addresses could lead to physical harm and identity theft."
+    },
+    {
+      "table": "stg_customers",
+      "column": "pan_number",
+      "pii_type": "GOV_ID",
+      "severity": "CRITICAL",
+      "risk": "Exposure of PAN numbers could lead to severe identity theft and financial fraud."
+    },
+    {
+      "table": "stg_events",
+      "column": "customer_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft and unauthorized access to personal accounts."
+    },
+    {
+      "table": "stg_events",
+      "column": "latitude",
+      "pii_type": "LOCATION",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could reveal the physical location of the user, potentially leading to privacy invasion."
+    },
+    {
+      "table": "stg_events",
+      "column": "longitude",
+      "pii_type": "LOCATION",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could reveal the physical location of the user, potentially leading to privacy invasion."
+    },
+    {
+      "table": "stg_merchants",
+      "column": "merchant_name",
+      "pii_type": "NAME",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to identity theft or targeted harassment."
+    },
+    {
+      "table": "stg_merchants",
+      "column": "contact_email",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to phishing attacks, spam, and identity theft."
+    },
+    {
+      "table": "stg_merchants",
+      "column": "contact_phone",
+      "pii_type": "PHONE",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unwanted communications and potential harassment."
+    },
+    {
+      "table": "stg_merchants",
+      "column": "gstin",
+      "pii_type": "GOV_ID",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to tax fraud and identity theft."
+    },
+    {
+      "table": "stg_merchants",
+      "column": "bank_account_number",
+      "pii_type": "FINANCIAL",
+      "severity": "CRITICAL",
+      "risk": "If leaked, it could lead to financial fraud and theft."
+    },
+    {
+      "table": "stg_merchants",
+      "column": "ifsc_code",
+      "pii_type": "FINANCIAL",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unauthorized transactions."
+    },
+    {
+      "table": "stg_transactions",
+      "column": "customer_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft and fraud."
+    },
+    {
+      "table": "stg_transactions",
+      "column": "merchant_id",
+      "pii_type": "GOV_ID",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unauthorized access to merchant accounts."
+    }
+  ],
+  "summary": {
+    "total_tables": 11,
+    "total_pii_columns": 27,
+    "critical_columns": 2,
+    "high_columns": 11,
+    "analysis_seconds": 48.9
+  }
+}

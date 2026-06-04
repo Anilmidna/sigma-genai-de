@@ -1,0 +1,7 @@
+{
+  "lab": "2 - Sigma DataTech",
+  "sensitive_columns": "stg_transactions.mobile_number, stg_customers.email, stg_transactions.bank_account_number",
+  "hacker_target": "fct_transactions",
+  "gdpr_risk": "stg_customers",
+  "timestamp": "2026-06-03T06:36:16.802171+00:00"
+}

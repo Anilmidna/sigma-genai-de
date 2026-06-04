@@ -1,0 +1,1309 @@
+{
+  "mystery_folder": "mystery_b",
+  "industry_analysis": {
+    "industry": "Food Delivery",
+    "what_they_do": "This company facilitates food delivery services, connecting customers with restaurants and riders for food orders. They manage user accounts, process orders, and handle ratings and feedback.",
+    "top_clues": [
+      "outlet_id",
+      "cuisine_type",
+      "rider_id"
+    ],
+    "confidence": "HIGH"
+  },
+  "generated_at": "2026-06-03T06:33:50.075361+00:00",
+  "tables": {
+    "dim_users": {
+      "source_tables": [
+        "stg_users",
+        "int_user_behaviour"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "user_id",
+          "source_table": "stg_users",
+          "source_column": "user_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "signup_date",
+          "source_table": "stg_users",
+          "source_column": "signup_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_premium",
+          "source_table": "stg_users",
+          "source_column": "is_premium",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "preferred_payment",
+          "source_table": "stg_users",
+          "source_column": "preferred_payment",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "account_age_days",
+          "source_table": "stg_users",
+          "source_column": "signup_date",
+          "transformation": "DATEDIFF('day', signup_date, CURRENT_DATE())"
+        },
+        {
+          "target_column": "age_approx",
+          "source_table": "stg_users",
+          "source_column": "date_of_birth",
+          "transformation": "DATEDIFF('year', date_of_birth, CURRENT_DATE())"
+        },
+        {
+          "target_column": "total_orders",
+          "source_table": "int_user_behaviour",
+          "source_column": "total_orders",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "avg_order_value",
+          "source_table": "int_user_behaviour",
+          "source_column": "avg_order_value",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "avg_order_hour",
+          "source_table": "int_user_behaviour",
+          "source_column": "avg_order_hour",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "most_used_payment",
+          "source_table": "int_user_behaviour",
+          "source_column": "preferred_payment",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "cancelled_orders",
+          "source_table": "int_user_behaviour",
+          "source_column": "cancelled_orders",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_discount_availed",
+          "source_table": "int_user_behaviour",
+          "source_column": "total_discount_availed",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "email_hash",
+          "source_table": "stg_users",
+          "source_column": "registered_email",
+          "transformation": "SHA2(registered_email, 256)"
+        },
+        {
+          "target_column": "phone_hash",
+          "source_table": "stg_users",
+          "source_column": "mobile_number",
+          "transformation": "SHA2(mobile_number, 256)"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "stg_users",
+          "source_column": "_loaded_at",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "user_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft or unauthorized access to user accounts."
+        },
+        {
+          "column": "registered_email",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to phishing attacks, spam, or unauthorized access to user accounts."
+        },
+        {
+          "column": "mobile_number",
+          "pii_type": "PHONE",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to unauthorized communication, identity theft, or targeted attacks."
+        },
+        {
+          "column": "date_of_birth",
+          "pii_type": "GOV_ID",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to identity theft or unauthorized access to personal information."
+        }
+      ],
+      "business_description": "This table provides a detailed view of user profiles, including their account age, order behavior, and payment preferences. It combines data from the staging user table and the intermediate user behavior table.",
+      "who_should_access": "Data analysts, data scientists, and marketing teams",
+      "who_should_NOT_access": "General public, sales team, and any external parties",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Access to raw location data requires approval from the Privacy team.",
+      "model_name": "dim_users",
+      "sql_lines": 23,
+      "analysed_at": "2026-06-03T06:33:54.718081+00:00"
+    },
+    "fct_deliveries": {
+      "source_tables": [
+        "stg_orders",
+        "stg_outlets",
+        "stg_ratings"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "order_date",
+          "source_table": "stg_orders",
+          "source_column": "order_placed_at",
+          "transformation": "DATE extraction"
+        },
+        {
+          "target_column": "actual_delivery_mins",
+          "source_table": "stg_orders",
+          "source_column": [
+            "picked_up_at",
+            "delivered_at"
+          ],
+          "transformation": "DATEDIFF calculation"
+        },
+        {
+          "target_column": "total_fulfilment_mins",
+          "source_table": "stg_orders",
+          "source_column": [
+            "order_placed_at",
+            "delivered_at"
+          ],
+          "transformation": "DATEDIFF calculation"
+        },
+        {
+          "target_column": "food_rating",
+          "source_table": "stg_ratings",
+          "source_column": "user_rating_for_food",
+          "transformation": "COALESCE to handle NULLs"
+        },
+        {
+          "target_column": "rider_rating",
+          "source_table": "stg_ratings",
+          "source_column": "user_rating_for_rider",
+          "transformation": "COALESCE to handle NULLs"
+        },
+        {
+          "target_column": "cuisine_type",
+          "source_table": "stg_outlets",
+          "source_column": "cuisine_type",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "user_id",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to phishing attacks and unauthorized access to user accounts."
+        },
+        {
+          "column": "order_id",
+          "pii_type": "LOCATION",
+          "severity": "MEDIUM",
+          "real_world_risk": "If combined with other data, it could reveal user's purchasing habits and potentially their home address."
+        }
+      ],
+      "business_description": "This table captures detailed information about deliveries, including order details, outlet information, and user ratings. It is used for analyzing delivery performance and customer satisfaction.",
+      "who_should_access": "Operations, Data Analysts, and Management",
+      "who_should_NOT_access": "Marketing and Sales",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure proper access controls are in place to protect PII data.",
+      "model_name": "fct_deliveries",
+      "sql_lines": 27,
+      "analysed_at": "2026-06-03T06:33:57.815962+00:00"
+    },
+    "int_user_behaviour": {
+      "source_tables": [
+        "stg_orders",
+        "stg_ratings"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "user_id",
+          "source_table": "stg_orders",
+          "source_column": "user_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_orders",
+          "source_table": "stg_orders",
+          "source_column": "order_id",
+          "transformation": "COUNT"
+        },
+        {
+          "target_column": "avg_order_value",
+          "source_table": "stg_orders",
+          "source_column": "final_amount_paid",
+          "transformation": "AVG"
+        },
+        {
+          "target_column": "last_order_at",
+          "source_table": "stg_orders",
+          "source_column": "order_placed_at",
+          "transformation": "MAX"
+        },
+        {
+          "target_column": "unique_outlets",
+          "source_table": "stg_orders",
+          "source_column": "outlet_id",
+          "transformation": "COUNT DISTINCT"
+        },
+        {
+          "target_column": "preferred_payment",
+          "source_table": "stg_orders",
+          "source_column": "payment_method",
+          "transformation": "MODE"
+        },
+        {
+          "target_column": "avg_order_hour",
+          "source_table": "stg_orders",
+          "source_column": "order_placed_at",
+          "transformation": "AVG EXTRACT(HOUR)"
+        },
+        {
+          "target_column": "cancelled_orders",
+          "source_table": "stg_orders",
+          "source_column": "order_status",
+          "transformation": "COUNT CASE WHEN order_status = 'CANCELLED' THEN 1 END"
+        },
+        {
+          "target_column": "total_discount_availed",
+          "source_table": "stg_orders",
+          "source_column": "platform_discount",
+          "transformation": "SUM"
+        },
+        {
+          "target_column": "avg_food_rating_given",
+          "source_table": "stg_ratings",
+          "source_column": "user_rating_for_food",
+          "transformation": "AVG"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "user_id",
+          "pii_type": "NAME",
+          "severity": "HIGH",
+          "real_world_risk": "If user_id leaks, it can lead to identity theft and targeted attacks."
+        }
+      ],
+      "business_description": "This model aggregates user behavior data from orders and ratings to provide insights into user purchasing patterns and preferences.",
+      "who_should_access": "Marketing and Data Science teams",
+      "who_should_NOT_access": "Sales and Customer Support teams",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure user_id is anonymized or pseudonymized to protect user privacy.",
+      "model_name": "int_user_behaviour",
+      "sql_lines": 16,
+      "analysed_at": "2026-06-03T06:34:01.427359+00:00"
+    },
+    "stg_orders": {
+      "source_tables": [
+        "raw.orders"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "order_id",
+          "source_table": "raw.orders",
+          "source_column": "order_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "user_id",
+          "source_table": "raw.orders",
+          "source_column": "user_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "outlet_id",
+          "source_table": "raw.orders",
+          "source_column": "outlet_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "rider_id",
+          "source_table": "raw.orders",
+          "source_column": "rider_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "order_placed_at",
+          "source_table": "raw.orders",
+          "source_column": "order_placed_at",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "order_confirmed_at",
+          "source_table": "raw.orders",
+          "source_column": "order_confirmed_at",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "picked_up_at",
+          "source_table": "raw.orders",
+          "source_column": "picked_up_at",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "delivered_at",
+          "source_table": "raw.orders",
+          "source_column": "delivered_at",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "delivery_address",
+          "source_table": "raw.orders",
+          "source_column": "delivery_address",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "drop_lat",
+          "source_table": "raw.orders",
+          "source_column": "drop_lat",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "drop_lng",
+          "source_table": "raw.orders",
+          "source_column": "drop_lng",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "item_total",
+          "source_table": "raw.orders",
+          "source_column": "item_total",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "delivery_fee",
+          "source_table": "raw.orders",
+          "source_column": "delivery_fee",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "platform_discount",
+          "source_table": "raw.orders",
+          "source_column": "platform_discount",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "final_amount_paid",
+          "source_table": "raw.orders",
+          "source_column": "final_amount_paid",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payment_method",
+          "source_table": "raw.orders",
+          "source_column": "payment_method",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "promo_code_used",
+          "source_table": "raw.orders",
+          "source_column": "promo_code_used",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "surge_multiplier",
+          "source_table": "raw.orders",
+          "source_column": "surge_multiplier",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "otp_verified",
+          "source_table": "raw.orders",
+          "source_column": "otp_verified",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "order_status",
+          "source_table": "raw.orders",
+          "source_column": "order_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "cancellation_reason",
+          "source_table": "raw.orders",
+          "source_column": "cancellation_reason",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "user_id",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to unauthorized access to user accounts and personal information."
+        },
+        {
+          "column": "delivery_address",
+          "pii_type": "ADDRESS",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unauthorized access to the user's physical location."
+        },
+        {
+          "column": "otp_verified",
+          "pii_type": "PHONE",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unauthorized access to the user's phone number."
+        }
+      ],
+      "business_description": "This table contains detailed information about orders placed through the platform, including user details, order status, and payment information.",
+      "who_should_access": "The operations and customer support teams should be allowed to query this table.",
+      "who_should_NOT_access": "Marketing and sales teams should be explicitly blocked from accessing this table.",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is restricted and monitored due to the presence of PII data.",
+      "model_name": "stg_orders",
+      "sql_lines": 27,
+      "analysed_at": "2026-06-03T06:34:07.358655+00:00"
+    },
+    "stg_outlets": {
+      "source_tables": [
+        "raw.outlets"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "outlet_id",
+          "source_table": "raw.outlets",
+          "source_column": "outlet_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "outlet_name",
+          "source_table": "raw.outlets",
+          "source_column": "outlet_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "cuisine_type",
+          "source_table": "raw.outlets",
+          "source_column": "cuisine_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "owner_name",
+          "source_table": "raw.outlets",
+          "source_column": "owner_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "owner_mobile",
+          "source_table": "raw.outlets",
+          "source_column": "owner_mobile",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "owner_email",
+          "source_table": "raw.outlets",
+          "source_column": "owner_email",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "fssai_number",
+          "source_table": "raw.outlets",
+          "source_column": "fssai_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gst_number",
+          "source_table": "raw.outlets",
+          "source_column": "gst_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "outlet_address",
+          "source_table": "raw.outlets",
+          "source_column": "outlet_address",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "outlet_lat",
+          "source_table": "raw.outlets",
+          "source_column": "outlet_lat",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "outlet_lng",
+          "source_table": "raw.outlets",
+          "source_column": "outlet_lng",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "avg_prep_time_mins",
+          "source_table": "raw.outlets",
+          "source_column": "avg_prep_time_mins",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "avg_rating",
+          "source_table": "raw.outlets",
+          "source_column": "avg_rating",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_pure_veg",
+          "source_table": "raw.outlets",
+          "source_column": "is_pure_veg",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "accepts_cash",
+          "source_table": "raw.outlets",
+          "source_column": "accepts_cash",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "commission_pct",
+          "source_table": "raw.outlets",
+          "source_column": "commission_pct",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "onboarded_date",
+          "source_table": "raw.outlets",
+          "source_column": "onboarded_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_active",
+          "source_table": "raw.outlets",
+          "source_column": "is_active",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "owner_name",
+          "pii_type": "NAME",
+          "severity": "MEDIUM",
+          "real_world_risk": "Owner's identity could be revealed, potentially leading to targeted harassment or identity theft."
+        },
+        {
+          "column": "owner_mobile",
+          "pii_type": "PHONE",
+          "severity": "HIGH",
+          "real_world_risk": "Owner's phone number could be used for unauthorized communication, scams, or harassment."
+        },
+        {
+          "column": "owner_email",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "Owner's email could be used for phishing attacks, spam, or unauthorized access to other accounts."
+        },
+        {
+          "column": "outlet_address",
+          "pii_type": "ADDRESS",
+          "severity": "MEDIUM",
+          "real_world_risk": "Physical address could be used for stalking, unauthorized visits, or targeted attacks."
+        }
+      ],
+      "business_description": "This table contains detailed information about various food outlets, including their operational details, owner information, and location data.",
+      "who_should_access": "Marketing, Operations, and Compliance teams should be allowed to query this table.",
+      "who_should_NOT_access": "General public and unauthorized personnel should be explicitly blocked.",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure proper access controls and encryption are in place for PII data.",
+      "model_name": "stg_outlets",
+      "sql_lines": 23,
+      "analysed_at": "2026-06-03T06:34:11.860476+00:00"
+    },
+    "stg_ratings": {
+      "source_tables": [
+        "ratings"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "rating_id",
+          "source_table": "ratings",
+          "source_column": "rating_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "order_id",
+          "source_table": "ratings",
+          "source_column": "order_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "user_id",
+          "source_table": "ratings",
+          "source_column": "user_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "rider_id",
+          "source_table": "ratings",
+          "source_column": "rider_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "outlet_id",
+          "source_table": "ratings",
+          "source_column": "outlet_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "user_rating_for_food",
+          "source_table": "ratings",
+          "source_column": "user_rating_for_food",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "user_rating_for_rider",
+          "source_table": "ratings",
+          "source_column": "user_rating_for_rider",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "user_comment",
+          "source_table": "ratings",
+          "source_column": "user_comment",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "outlet_rating_for_user",
+          "source_table": "ratings",
+          "source_column": "outlet_rating_for_user",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "rider_rating_for_user",
+          "source_table": "ratings",
+          "source_column": "rider_rating_for_user",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "rating_timestamp",
+          "source_table": "ratings",
+          "source_column": "rating_timestamp",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "user_id",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "If user_id leaks, it could lead to unauthorized access to user accounts."
+        },
+        {
+          "column": "rider_id",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "If rider_id leaks, it could lead to unauthorized access to rider accounts."
+        }
+      ],
+      "business_description": "This table contains user ratings for food, riders, and outlets. It includes ratings, comments, and timestamps for each rating entry.",
+      "who_should_access": "Data Analysts, Data Scientists, Customer Support",
+      "who_should_NOT_access": "Marketing, Sales",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that user_id and rider_id are properly anonymized or encrypted when used outside of secure environments.",
+      "model_name": "stg_ratings",
+      "sql_lines": 16,
+      "analysed_at": "2026-06-03T06:34:15.741381+00:00"
+    },
+    "stg_riders": {
+      "source_tables": [
+        "raw.riders"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "rider_id",
+          "source_table": "raw.riders",
+          "source_column": "rider_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "full_name",
+          "source_table": "raw.riders",
+          "source_column": "full_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "mobile_number",
+          "source_table": "raw.riders",
+          "source_column": "mobile_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "email",
+          "source_table": "raw.riders",
+          "source_column": "email",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "date_of_birth",
+          "source_table": "raw.riders",
+          "source_column": "date_of_birth",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "dl_number",
+          "source_table": "raw.riders",
+          "source_column": "dl_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "dl_expiry_date",
+          "source_table": "raw.riders",
+          "source_column": "dl_expiry_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "vehicle_number",
+          "source_table": "raw.riders",
+          "source_column": "vehicle_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "vehicle_type",
+          "source_table": "raw.riders",
+          "source_column": "vehicle_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "bank_account_number",
+          "source_table": "raw.riders",
+          "source_column": "bank_account_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "ifsc_code",
+          "source_table": "raw.riders",
+          "source_column": "ifsc_code",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "home_address",
+          "source_table": "raw.riders",
+          "source_column": "home_address",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "current_lat",
+          "source_table": "raw.riders",
+          "source_column": "current_lat",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "current_lng",
+          "source_table": "raw.riders",
+          "source_column": "current_lng",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "onboarding_date",
+          "source_table": "raw.riders",
+          "source_column": "onboarding_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "background_check_status",
+          "source_table": "raw.riders",
+          "source_column": "background_check_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_available",
+          "source_table": "raw.riders",
+          "source_column": "is_available",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_deliveries",
+          "source_table": "raw.riders",
+          "source_column": "total_deliveries",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "avg_rating",
+          "source_table": "raw.riders",
+          "source_column": "avg_rating",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "raw.riders",
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "full_name",
+          "pii_type": "NAME",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to full names can lead to identity theft."
+        },
+        {
+          "column": "mobile_number",
+          "pii_type": "PHONE",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to mobile numbers can lead to phishing attacks and harassment."
+        },
+        {
+          "column": "email",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to email addresses can lead to phishing attacks and spam."
+        },
+        {
+          "column": "date_of_birth",
+          "pii_type": "DATE_OF_BIRTH",
+          "severity": "MEDIUM",
+          "real_world_risk": "Unauthorized access to date of birth can lead to identity theft and fraud."
+        },
+        {
+          "column": "dl_number",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to driver's license numbers can lead to identity theft and fraud."
+        },
+        {
+          "column": "home_address",
+          "pii_type": "ADDRESS",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to home addresses can lead to physical stalking and fraud."
+        },
+        {
+          "column": "bank_account_number",
+          "pii_type": "FINANCIAL",
+          "severity": "CRITICAL",
+          "real_world_risk": "Unauthorized access to bank account numbers can lead to financial fraud and theft."
+        }
+      ],
+      "business_description": "This table contains detailed information about riders, including personal and professional data. It is used for managing rider profiles, tracking performance, and ensuring compliance with background checks.",
+      "who_should_access": "Operations, HR, and Compliance teams",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure strict access controls and encryption for sensitive data.",
+      "model_name": "stg_riders",
+      "sql_lines": 25,
+      "analysed_at": "2026-06-03T06:34:20.685488+00:00"
+    },
+    "stg_users": {
+      "source_tables": [
+        "raw.users"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "user_id",
+          "source_table": "raw.users",
+          "source_column": "user_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "full_name",
+          "source_table": "raw.users",
+          "source_column": "full_name",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "registered_email",
+          "source_table": "raw.users",
+          "source_column": "registered_email",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "mobile_number",
+          "source_table": "raw.users",
+          "source_column": "mobile_number",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "home_address",
+          "source_table": "raw.users",
+          "source_column": "home_address",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "home_lat",
+          "source_table": "raw.users",
+          "source_column": "home_lat",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "home_lng",
+          "source_table": "raw.users",
+          "source_column": "home_lng",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "office_address",
+          "source_table": "raw.users",
+          "source_column": "office_address",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "office_lat",
+          "source_table": "raw.users",
+          "source_column": "office_lat",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "office_lng",
+          "source_table": "raw.users",
+          "source_column": "office_lng",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "date_of_birth",
+          "source_table": "raw.users",
+          "source_column": "date_of_birth",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "device_id",
+          "source_table": "raw.users",
+          "source_column": "device_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "signup_date",
+          "source_table": "raw.users",
+          "source_column": "signup_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "last_active_at",
+          "source_table": "raw.users",
+          "source_column": "last_active_at",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "total_orders",
+          "source_table": "raw.users",
+          "source_column": "total_orders",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "wallet_balance",
+          "source_table": "raw.users",
+          "source_column": "wallet_balance",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "preferred_payment",
+          "source_table": "raw.users",
+          "source_column": "preferred_payment",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_premium",
+          "source_table": "raw.users",
+          "source_column": "is_premium",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "user_id",
+          "pii_type": "GOV_ID",
+          "severity": "CRITICAL",
+          "real_world_risk": "Unauthorized access to user ID can lead to identity theft and fraud."
+        },
+        {
+          "column": "full_name",
+          "pii_type": "NAME",
+          "severity": "HIGH",
+          "real_world_risk": "Exposure of full names can lead to identity theft and privacy invasion."
+        },
+        {
+          "column": "registered_email",
+          "pii_type": "EMAIL",
+          "severity": "MEDIUM",
+          "real_world_risk": "Leak of email addresses can lead to phishing attacks and spam."
+        },
+        {
+          "column": "mobile_number",
+          "pii_type": "PHONE",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to mobile numbers can lead to harassment and identity theft."
+        },
+        {
+          "column": "home_address",
+          "pii_type": "ADDRESS",
+          "severity": "HIGH",
+          "real_world_risk": "Exposure of home addresses can lead to physical security risks and privacy invasion."
+        },
+        {
+          "column": "date_of_birth",
+          "pii_type": "BIOMETRIC",
+          "severity": "HIGH",
+          "real_world_risk": "Leak of date of birth can lead to identity theft and fraud."
+        }
+      ],
+      "business_description": "This table contains user information from the company's data warehouse. It includes personal details, contact information, and account activity data.",
+      "who_should_access": "Data Analysts, Data Scientists, Compliance Officers",
+      "who_should_NOT_access": "Marketing Team, General Public",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure strict access controls and encryption for sensitive data.",
+      "model_name": "stg_users",
+      "sql_lines": 24,
+      "analysed_at": "2026-06-03T06:34:25.774897+00:00"
+    }
+  },
+  "three_questions": {
+    "q1_most_damaging_column": {
+      "column": "dim_users.registered_email",
+      "why": "A malicious actor could use the registered_email column to launch phishing attacks, leading to unauthorized access to user accounts. This could also result in spam and other malicious communications."
+    },
+    "q2_hacker_target_table": {
+      "table": "dim_users",
+      "why": "With SELECT access to the dim_users table, a hacker could extract sensitive personal information such as email addresses, phone numbers, and user IDs. This could lead to identity theft, unauthorized access, and targeted attacks.",
+      "damage_estimate": "significant harm"
+    },
+    "q3_europe_expansion": {
+      "columns_needing_consent": [
+        "dim_users.registered_email",
+        "dim_users.mobile_number",
+        "fct_deliveries.order_id"
+      ],
+      "why": "These columns contain personal information that requires GDPR consent due to their sensitivity and potential for misuse. Registered email and mobile number are direct identifiers, while order ID can be linked to personal information.",
+      "columns_already_compliant": [
+        "dim_users.email_hash (hashed for security)",
+        "dim_users.phone_hash (hashed for security)"
+      ]
+    }
+  },
+  "pii_surface_area": [
+    {
+      "table": "dim_users",
+      "column": "user_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft or unauthorized access to user accounts."
+    },
+    {
+      "table": "dim_users",
+      "column": "registered_email",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to phishing attacks, spam, or unauthorized access to user accounts."
+    },
+    {
+      "table": "dim_users",
+      "column": "mobile_number",
+      "pii_type": "PHONE",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to unauthorized communication, identity theft, or targeted attacks."
+    },
+    {
+      "table": "dim_users",
+      "column": "date_of_birth",
+      "pii_type": "GOV_ID",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to identity theft or unauthorized access to personal information."
+    },
+    {
+      "table": "fct_deliveries",
+      "column": "user_id",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to phishing attacks and unauthorized access to user accounts."
+    },
+    {
+      "table": "fct_deliveries",
+      "column": "order_id",
+      "pii_type": "LOCATION",
+      "severity": "MEDIUM",
+      "risk": "If combined with other data, it could reveal user's purchasing habits and potentially their home address."
+    },
+    {
+      "table": "int_user_behaviour",
+      "column": "user_id",
+      "pii_type": "NAME",
+      "severity": "HIGH",
+      "risk": "If user_id leaks, it can lead to identity theft and targeted attacks."
+    },
+    {
+      "table": "stg_orders",
+      "column": "user_id",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to unauthorized access to user accounts and personal information."
+    },
+    {
+      "table": "stg_orders",
+      "column": "delivery_address",
+      "pii_type": "ADDRESS",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unauthorized access to the user's physical location."
+    },
+    {
+      "table": "stg_orders",
+      "column": "otp_verified",
+      "pii_type": "PHONE",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unauthorized access to the user's phone number."
+    },
+    {
+      "table": "stg_outlets",
+      "column": "owner_name",
+      "pii_type": "NAME",
+      "severity": "MEDIUM",
+      "risk": "Owner's identity could be revealed, potentially leading to targeted harassment or identity theft."
+    },
+    {
+      "table": "stg_outlets",
+      "column": "owner_mobile",
+      "pii_type": "PHONE",
+      "severity": "HIGH",
+      "risk": "Owner's phone number could be used for unauthorized communication, scams, or harassment."
+    },
+    {
+      "table": "stg_outlets",
+      "column": "owner_email",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "Owner's email could be used for phishing attacks, spam, or unauthorized access to other accounts."
+    },
+    {
+      "table": "stg_outlets",
+      "column": "outlet_address",
+      "pii_type": "ADDRESS",
+      "severity": "MEDIUM",
+      "risk": "Physical address could be used for stalking, unauthorized visits, or targeted attacks."
+    },
+    {
+      "table": "stg_ratings",
+      "column": "user_id",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "If user_id leaks, it could lead to unauthorized access to user accounts."
+    },
+    {
+      "table": "stg_ratings",
+      "column": "rider_id",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "If rider_id leaks, it could lead to unauthorized access to rider accounts."
+    },
+    {
+      "table": "stg_riders",
+      "column": "full_name",
+      "pii_type": "NAME",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to full names can lead to identity theft."
+    },
+    {
+      "table": "stg_riders",
+      "column": "mobile_number",
+      "pii_type": "PHONE",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to mobile numbers can lead to phishing attacks and harassment."
+    },
+    {
+      "table": "stg_riders",
+      "column": "email",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to email addresses can lead to phishing attacks and spam."
+    },
+    {
+      "table": "stg_riders",
+      "column": "date_of_birth",
+      "pii_type": "DATE_OF_BIRTH",
+      "severity": "MEDIUM",
+      "risk": "Unauthorized access to date of birth can lead to identity theft and fraud."
+    },
+    {
+      "table": "stg_riders",
+      "column": "dl_number",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to driver's license numbers can lead to identity theft and fraud."
+    },
+    {
+      "table": "stg_riders",
+      "column": "home_address",
+      "pii_type": "ADDRESS",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to home addresses can lead to physical stalking and fraud."
+    },
+    {
+      "table": "stg_riders",
+      "column": "bank_account_number",
+      "pii_type": "FINANCIAL",
+      "severity": "CRITICAL",
+      "risk": "Unauthorized access to bank account numbers can lead to financial fraud and theft."
+    },
+    {
+      "table": "stg_users",
+      "column": "user_id",
+      "pii_type": "GOV_ID",
+      "severity": "CRITICAL",
+      "risk": "Unauthorized access to user ID can lead to identity theft and fraud."
+    },
+    {
+      "table": "stg_users",
+      "column": "full_name",
+      "pii_type": "NAME",
+      "severity": "HIGH",
+      "risk": "Exposure of full names can lead to identity theft and privacy invasion."
+    },
+    {
+      "table": "stg_users",
+      "column": "registered_email",
+      "pii_type": "EMAIL",
+      "severity": "MEDIUM",
+      "risk": "Leak of email addresses can lead to phishing attacks and spam."
+    },
+    {
+      "table": "stg_users",
+      "column": "mobile_number",
+      "pii_type": "PHONE",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to mobile numbers can lead to harassment and identity theft."
+    },
+    {
+      "table": "stg_users",
+      "column": "home_address",
+      "pii_type": "ADDRESS",
+      "severity": "HIGH",
+      "risk": "Exposure of home addresses can lead to physical security risks and privacy invasion."
+    },
+    {
+      "table": "stg_users",
+      "column": "date_of_birth",
+      "pii_type": "BIOMETRIC",
+      "severity": "HIGH",
+      "risk": "Leak of date of birth can lead to identity theft and fraud."
+    }
+  ],
+  "summary": {
+    "total_tables": 8,
+    "total_pii_columns": 29,
+    "critical_columns": 2,
+    "high_columns": 19,
+    "analysis_seconds": 38.2
+  }
+}
