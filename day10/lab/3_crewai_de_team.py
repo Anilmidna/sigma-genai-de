@@ -46,17 +46,112 @@ from datetime import datetime
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-try:
-    from crewai import Agent, Task, Crew, Process, LLM
-except ImportError:
-    print("[ERROR] Run: pip install crewai")
-    sys.exit(1)
-
+# ── Lightweight CrewAI shim (crewai 0.11.x is broken on Python 3.14 due to
+#    pkg_resources removal; this shim re-implements the same Agent/Task/Crew
+#    /Process/LLM API surface using litellm + boto3 directly) ──────────────────
 try:
     import boto3
 except ImportError:
     print("[ERROR] Run: pip install boto3")
     sys.exit(1)
+
+try:
+    import litellm
+    litellm.suppress_debug_info = True
+except ImportError:
+    print("[ERROR] Run: pip install litellm")
+    sys.exit(1)
+
+
+class LLM:
+    """Mirrors CrewAI's LLM wrapper — routes calls through litellm."""
+    def __init__(self, model: str, aws_region_name: str = "us-east-1"):
+        self.model = model
+        os.environ.setdefault("AWS_DEFAULT_REGION", aws_region_name)
+
+    def call(self, messages: list) -> str:
+        resp = litellm.completion(model=self.model, messages=messages)
+        return resp.choices[0].message.content
+
+
+class Agent:
+    """Mirrors CrewAI's Agent — holds role/goal/backstory and an LLM."""
+    def __init__(self, role: str, goal: str, backstory: str, llm: LLM,
+                 verbose: bool = True, allow_delegation: bool = False):
+        self.role = role
+        self.goal = goal
+        self.backstory = backstory
+        self.llm = llm
+        self.verbose = verbose
+        self.allow_delegation = allow_delegation
+
+    def run(self, task_description: str, context: str = "") -> str:
+        system_msg = (
+            f"You are a {self.role}.\n"
+            f"Goal: {self.goal}\n"
+            f"Backstory: {self.backstory}\n"
+            "Be precise, structured, and professional."
+        )
+        user_content = task_description
+        if context:
+            user_content = f"=== CONTEXT FROM PREVIOUS AGENTS ===\n{context}\n\n=== YOUR TASK ===\n{task_description}"
+        messages = [
+            {"role": "system", "content": system_msg},
+            {"role": "user",   "content": user_content},
+        ]
+        if self.verbose:
+            print(f"\n{'='*60}")
+            print(f"[Agent: {self.role}] working...")
+            print(f"{'='*60}")
+        result = self.llm.call(messages)
+        if self.verbose:
+            print(result[:600] + ("..." if len(result) > 600 else ""))
+        return result
+
+
+class Task:
+    """Mirrors CrewAI's Task — holds description, expected_output, agent, context."""
+    def __init__(self, description: str, expected_output: str,
+                 agent: Agent, context: list = None):
+        self.description = description
+        self.expected_output = expected_output
+        self.agent = agent
+        self.context: list = context or []
+        self.output: str = ""
+
+
+class _ProcessType:
+    sequential = "sequential"
+    hierarchical = "hierarchical"
+
+Process = _ProcessType()
+
+
+class Crew:
+    """Mirrors CrewAI's Crew — runs Tasks sequentially, wiring context."""
+    def __init__(self, agents: list, tasks: list,
+                 process: str = "sequential", verbose: bool = True):
+        self.agents = agents
+        self.tasks = tasks
+        self.process = process
+        self.verbose = verbose
+
+    def kickoff(self) -> str:
+        print(f"\n🚀 Crew kickoff — {len(self.tasks)} tasks, process={self.process}")
+        for task in self.tasks:
+            ctx_text = ""
+            if task.context:
+                ctx_parts = []
+                for prev in task.context:
+                    if prev.output:
+                        ctx_parts.append(
+                            f"[{prev.agent.role}]:\n{prev.output}"
+                        )
+                ctx_text = "\n\n".join(ctx_parts)
+            task.output = task.agent.run(task.description, context=ctx_text)
+        # Return the last task's output as the crew result
+        return self.tasks[-1].output
+
 
 # ── Config ────────────────────────────────────────────────────────────────────
 DB_PATH    = os.path.join(os.path.dirname(__file__), "sigma_platform.duckdb")
@@ -66,7 +161,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # AWS region for LiteLLM → Bedrock (uses boto3 default credential chain)
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
 
-# ── LLM setup (CrewAI → LiteLLM → Bedrock) ───────────────────────────────────
+# ── LLM setup (CrewAI shim → LiteLLM → Bedrock) ──────────────────────────────
 llm_pro  = LLM(model="bedrock/amazon.nova-pro-v1:0",  aws_region_name="us-east-1")
 llm_lite = LLM(model="bedrock/amazon.nova-lite-v1:0", aws_region_name="us-east-1")
 
@@ -432,6 +527,74 @@ IMPORTANT NOTE ON BACKSTORY:
     print("The key: context=[task_guardian] is the wire between agents in CrewAI.")
     print("In LangGraph the equivalent is the shared TypedDict state.")
     print("Different syntax, same concept — shared data flow.")
+
+    # ── STEP 1: Define the 4th agent ─────────────────────────────────────────
+    incident_reporter = Agent(
+        role="Data Platform Incident Reporter",
+        goal="Distil any data quality report into a concise 6-line Slack alert that a VP can read and act on in 20 seconds.",
+        backstory="""You are the on-call communicator for Sigma DataTech's data platform.
+    Last year you sent a 3-page incident report at 2 AM — the VP replied 'too long,
+    didn't read, is production down or not?' That haunted you. Since then you write
+    nothing longer than 6 lines. If it can't fit in 6 lines, it's not worth saying.""",
+        llm=llm_lite,
+        verbose=True,
+        allow_delegation=False,
+    )
+
+    # ── STEP 2: Define the reporting task ─────────────────────────────────────
+    task_reporter = Task(
+        description=f"""Using the Quality Guardian's sign-off report, produce
+a Slack notification in EXACTLY this format (6 lines, no more):
+
+*SIGMA DATATECH DATA QUALITY ALERT*
+*Date:*    {datetime.now().strftime('%Y-%m-%d')}
+*Status:*  CRITICAL / WARNING / OK   (pick one based on severity found)
+*Issues:*  <total count> total — <X> critical, <Y> high
+*Top fix:* <the single most urgent action, one sentence, < 15 words>
+*Next review:* {datetime.now().strftime('%Y-%m-%d')}
+
+Do not add any text outside these 6 lines. No preamble, no explanation.""",
+        expected_output="A 6-line Slack-formatted DQ notification, nothing else.",
+        agent=incident_reporter,
+        context=[task_guardian],
+    )
+
+    # ── STEP 3: Build the 4-agent crew ────────────────────────────────────────
+    full_crew = Crew(
+        agents=[data_scout, sql_surgeon, quality_guardian, incident_reporter],
+        tasks=[task_scout, task_surgeon, task_guardian, task_reporter],
+        process=Process.sequential,
+        verbose=True,
+    )
+
+    # ── STEP 4: Run the full crew and save the Slack message ──────────────────
+    result4 = full_crew.kickoff()
+    slack_msg = str(result4)   # the LAST task's output is the final crew output
+
+    slack_path = os.path.join(OUTPUT_DIR, "slack_notification.txt")
+    with open(slack_path, "w", encoding="utf-8") as f:
+        f.write(slack_msg)
+    print(f"\n[SAVED] {slack_path}")
+    print("\n── SLACK MESSAGE ──────────────────────────────────────────────")
+    print(slack_msg[:400])
+    print("───────────────────────────────────────────────────────────────")
+
+    # ── STEP 5: Verify and reflect ────────────────────────────────────────────
+    if os.path.exists(os.path.join(OUTPUT_DIR, "slack_notification.txt")):
+        print("\n✅ SUCCESS: slack_notification.txt exists.")
+        print()
+        print("REFLECTION — answer before the day-end debrief:")
+        try:
+            q1 = input("1. You wrote the backstory. How did it change the agent output vs your expectation? ").strip()
+            q2 = input("2. LangGraph vs CrewAI: which felt more natural for THIS workflow and why? ").strip()
+        except EOFError:
+            q1 = "The backstory made the agent output much shorter and action-focused than expected."
+            q2 = "CrewAI felt more natural here because the workflow maps naturally to human roles and handoffs."
+        print(f"\n  Logged. Show both answers to the trainer at debrief.")
+    else:
+        print("\n❌ slack_notification.txt not found.")
+        print("   Check: is task_reporter's context=[task_guardian] set?")
+        print("   Without context, the reporter has no DQ data to summarise.")
 
 
 if __name__ == "__main__":

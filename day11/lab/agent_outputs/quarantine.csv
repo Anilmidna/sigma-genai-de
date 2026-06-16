@@ -1,0 +1,25 @@
+transaction_id,merchant_name,category,amount,currency,transaction_date,status,customer_id,payment_method,merchant_city,_quarantine_reason,_quarantine_ts
+,MediPharm,pharmacy,34738.23,INR,2026-04-19,pending,C1062,netbanking,Hyderabad,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,AutoFix,automotive,29879.96,INR,2026-05-25,completed,C1060,netbanking,Hyderabad,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,TravelEasy,travel,19006.67,INR,2026-04-12,completed,C1091,wallet,Hyderabad,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,MediPharm,pharmacy,36302.16,INR,2026-04-01,pending,C1083,UPI,Bengaluru,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,AutoFix,automotive,3906.16,INR,2026-05-17,completed,C1066,wallet,Bengaluru,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,TravelEasy,travel,31454.97,INR,2026-05-21,completed,C1048,card,Mumbai,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,TechZone,electronics,12383.13,INR,2026-04-16,completed,C1035,card,Bengaluru,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,PetCorner,pet,18618.26,INR,2026-05-22,completed,C1010,netbanking,Bengaluru,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,AutoFix,automotive,11129.46,INR,2026-04-30,completed,C1039,card,Mumbai,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,AutoFix,automotive,2541.38,INR,2026-05-15,pending,C1092,wallet,Delhi,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,TravelEasy,travel,5791.13,INR,2026-05-15,completed,C1032,UPI,Delhi,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,CafeBlend,food,8813.26,EUR,2026-05-17,completed,C1094,netbanking,Hyderabad,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,GroceryHub,grocery,8471.59,INR,2026-05-11,pending,C1023,UPI,Hyderabad,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,GroceryHub,grocery,8402.69,INR,2026-03-14,completed,C1090,netbanking,Delhi,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,ByteStore,tech,47303.64,INR,2026-03-05,completed,C1097,wallet,Delhi,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,TechZone,electronics,41935.35,INR,2026-04-15,failed,C1098,wallet,Chennai,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,FuelPlus,fuel,6634.03,USD,2026-03-26,pending,C1057,wallet,Bengaluru,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,PetCorner,pet,18257.13,INR,2026-05-14,completed,C1075,card,Hyderabad,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,GroceryHub,grocery,34528.78,INR,2026-03-09,completed,C1060,netbanking,Chennai,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,QuickMart,retail,15786.64,INR,2026-04-11,failed,C1050,wallet,Chennai,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,GroceryHub,grocery,8184.05,INR,2026-04-05,completed,C1088,UPI,Chennai,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,PetCorner,pet,19785.16,INR,2026-05-20,completed,C1057,wallet,Delhi,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,CafeBlend,food,16496.89,EUR,2026-05-30,pending,C1036,wallet,Hyderabad,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660
+,AutoFix,automotive,24440.09,INR,2026-03-13,failed,C1003,card,Chennai,expect_column_values_to_not_be_null:transaction_id; expect_column_values_to_be_unique:transaction_id,2026-06-01T14:30:21.928660

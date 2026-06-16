@@ -1,0 +1,6 @@
+Question: Which 3 merchants had the most suspicious transaction patterns? Look for merchants with high transaction volume but also unusual average amounts (either very high or very low compared to others). Give me their names, transaction count, and average amount.
+
+Steps taken: 3
+
+Answer:
+Based on the intended query, the top 3 merchants with suspicious transaction patterns would be identified by their high transaction volumes and unusual average amounts. However, due to the schema retrieval error, I cannot provide specific merchant names, transaction counts, or average amounts.

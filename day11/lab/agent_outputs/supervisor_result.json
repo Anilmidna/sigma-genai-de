@@ -1,0 +1,74 @@
+{
+  "pattern": "supervisor",
+  "timestamp": "2026-06-01T12:01:00.650037",
+  "results": [
+    {
+      "task": {
+        "id": "T001",
+        "type": "new_csv",
+        "file": "transactions_raw.csv",
+        "rows": 500
+      },
+      "routing": {
+        "task_id": "T001",
+        "assigned_agents": [
+          "ProfilerAgent",
+          "QualityAgent",
+          "PIIAgent",
+          "SchemaAgent"
+        ],
+        "execution_order": "parallel",
+        "reasoning": "To efficiently profile, validate, detect PII, and check for schema drift simultaneously."
+      }
+    },
+    {
+      "task": {
+        "id": "T002",
+        "type": "quality_alert",
+        "file": "customers_raw.csv",
+        "rows": 100
+      },
+      "routing": {
+        "task_id": "T002",
+        "assigned_agents": [
+          "QualityAgent",
+          "LoaderAgent"
+        ],
+        "execution_order": "parallel",
+        "reasoning": "Quality checks and data loading can be performed simultaneously"
+      }
+    },
+    {
+      "task": {
+        "id": "T003",
+        "type": "schema_drift",
+        "file": "payments_nov.csv",
+        "rows": 12000
+      },
+      "routing": {
+        "task_id": "T003",
+        "assigned_agents": [
+          "SchemaAgent"
+        ],
+        "execution_order": "sequential",
+        "reasoning": "Schema drift detection must be performed before any data loading or quality checks."
+      }
+    },
+    {
+      "task": {
+        "id": "T004",
+        "type": "pii_scan",
+        "file": "employee_records.csv",
+        "rows": 50
+      },
+      "routing": {
+        "task_id": "T004",
+        "assigned_agents": [
+          "PIIAgent"
+        ],
+        "execution_order": "sequential",
+        "reasoning": "PII scanning must be done before any other processing to ensure data privacy."
+      }
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "agent": "PIISensitivityAgent",
+  "run_timestamp": "2026-06-01T15:23:08.473871",
+  "input_file": "customers_raw.csv",
+  "total_columns": 9,
+  "pii_columns_found": 6,
+  "dataset_sensitivity_tier": "Restricted",
+  "pii_findings": {
+    "full_name": {
+      "pii_type": "full_name",
+      "category": "Identity",
+      "sensitivity": "Confidential",
+      "confidence": "high",
+      "match_rate": 1.0,
+      "detection_method": "regex"
+    },
+    "email_address": {
+      "pii_type": "email_address",
+      "category": "Contact",
+      "sensitivity": "Confidential",
+      "confidence": "high",
+      "match_rate": 1.0,
+      "detection_method": "regex"
+    },
+    "phone_number": {
+      "pii_type": "aadhaar_number",
+      "category": "Government ID",
+      "sensitivity": "Restricted",
+      "confidence": "high",
+      "match_rate": 1.0,
+      "detection_method": "regex"
+    },
+    "pan_number": {
+      "pii_type": "pan_number",
+      "category": "Financial ID",
+      "sensitivity": "Restricted",
+      "confidence": "high",
+      "match_rate": 1.0,
+      "detection_method": "regex"
+    },
+    "account_number": {
+      "pii_type": "aadhaar_number",
+      "category": "Government ID",
+      "sensitivity": "Restricted",
+      "confidence": "high",
+      "match_rate": 1.0,
+      "detection_method": "regex"
+    },
+    "customer_id": {
+      "pii_type": "Identifier",
+      "category": "LLM-detected",
+      "sensitivity": "Confidential",
+      "confidence": "llm",
+      "reasoning": "Customer ID can be linked to an individual, making it personally identifiable.",
+      "masking_recommendation": "Mask or anonymize before sharing externally.",
+      "detection_method": "llm"
+    }
+  }
+}

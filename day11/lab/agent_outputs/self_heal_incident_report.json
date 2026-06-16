@@ -1,0 +1,95 @@
+{
+  "agent": "SelfHealAgent",
+  "run_timestamp": "2026-06-01T18:10:31.002707",
+  "total_incidents": 3,
+  "healed": 3,
+  "escalated": 0,
+  "incidents": [
+    {
+      "incident_id": "INC-001",
+      "timestamp": "2026-06-01T18:10:27.576797",
+      "pipeline": "transactions_daily_load",
+      "original_error": "IntegrityError: null value in column 'transaction_id' violates not-null constraint",
+      "heal_attempt": 1,
+      "diagnosis": {
+        "root_cause_category": "null_data",
+        "root_cause_summary": "The pipeline failed due to null values in the 'transaction_id' column, which is a primary key and cannot accept null values.",
+        "fix_action": "drop_bad_rows",
+        "fix_safe_to_automate": true,
+        "fix_instructions": "Automate the process to drop rows with null values in the 'transaction_id' column before loading the data into the database.",
+        "estimated_data_loss_pct": 0.1
+      },
+      "fix_applied": {
+        "status": "fixed",
+        "action": "drop_bad_rows",
+        "rows_dropped": 24,
+        "output_file": "/Users/as-mac-1317/Desktop/genai2/day_6/sigma-genai-de/day11/lab/agent_outputs/fixed_transactions_raw.csv"
+      },
+      "validation": {
+        "validation": "passed",
+        "clean_rows": 476,
+        "message": "Fixed file has 476 clean rows"
+      },
+      "outcome": "passed",
+      "alert_required": false
+    },
+    {
+      "incident_id": "INC-002",
+      "timestamp": "2026-06-01T18:10:29.313383",
+      "pipeline": "transactions_daily_load",
+      "original_error": "ColumnNotFoundError: column 'upi_ref_id' not found in target table",
+      "heal_attempt": 1,
+      "diagnosis": {
+        "root_cause_category": "schema_drift",
+        "root_cause_summary": "The target table schema has changed and is missing the 'upi_ref_id' column that the pipeline expects.",
+        "fix_action": "add_missing_column",
+        "fix_safe_to_automate": true,
+        "fix_instructions": "Add the 'upi_ref_id' column to the target table schema to align it with the incoming data schema.",
+        "estimated_data_loss_pct": 0
+      },
+      "fix_applied": {
+        "status": "fixed",
+        "action": "add_missing_column",
+        "action_taken": "added_null_column_upi_ref_id",
+        "output_file": "/Users/as-mac-1317/Desktop/genai2/day_6/sigma-genai-de/day11/lab/agent_outputs/fixed_transactions_raw.csv"
+      },
+      "validation": {
+        "validation": "passed",
+        "clean_rows": 500,
+        "message": "Fixed file has 500 clean rows"
+      },
+      "outcome": "passed",
+      "alert_required": false
+    },
+    {
+      "incident_id": "INC-003",
+      "timestamp": "2026-06-01T18:10:31.001899",
+      "pipeline": "amount_aggregation",
+      "original_error": "DataError: invalid input syntax for type numeric: '' on column 'amount'",
+      "heal_attempt": 1,
+      "diagnosis": {
+        "root_cause_category": "type_error",
+        "root_cause_summary": "The pipeline failed due to a type mismatch error where empty strings were found in the 'amount' column, which is expected to be of numeric type.",
+        "fix_action": "cast_column_type",
+        "fix_safe_to_automate": true,
+        "fix_instructions": "Update the data ingestion process to handle empty strings in the 'amount' column by either converting them to NULL or a default numeric value (e.g., 0) before casting the column to numeric.",
+        "estimated_data_loss_pct": 0.1
+      },
+      "fix_applied": {
+        "status": "fixed",
+        "action": "cast_column_type",
+        "column_fixed": "amount",
+        "rows_fixed": 21,
+        "output_file": "/Users/as-mac-1317/Desktop/genai2/day_6/sigma-genai-de/day11/lab/agent_outputs/fixed_transactions_raw.csv"
+      },
+      "validation": {
+        "validation": "passed",
+        "clean_rows": 500,
+        "message": "Fixed file has 500 clean rows"
+      },
+      "outcome": "passed",
+      "alert_required": false
+    }
+  ],
+  "student_judgment": "No, this is not a true success because the pipeline recovered by silently dropping 15% of the data, which could cause significant business and reporting errors. I would add a guardrail that automatically triggers an alert (or escalation) whenever data loss exceeds a defined threshold, even if the pipeline validation passes."
+}

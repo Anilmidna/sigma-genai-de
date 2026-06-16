@@ -1,0 +1,169 @@
+{
+  "pattern": "sequential_pipeline",
+  "timestamp": "2026-06-01T12:01:07.454084",
+  "input_file": {
+    "filename": "transactions_raw.csv",
+    "row_count": 500,
+    "columns": [
+      "transaction_id",
+      "merchant_name",
+      "category",
+      "amount",
+      "currency",
+      "transaction_date",
+      "status",
+      "customer_id",
+      "payment_method",
+      "merchant_city"
+    ],
+    "sample_issues": [
+      "4 blank transaction_ids",
+      "7 null amounts",
+      "3 negative amounts",
+      "2 invalid dates",
+      "1 unknown currency"
+    ]
+  },
+  "stages": [
+    {
+      "completeness_percentage": 95.6,
+      "key_issues": {
+        "blank_transaction_ids": 4,
+        "null_amounts": 7,
+        "negative_amounts": 3,
+        "invalid_dates": 2,
+        "unknown_currency": 1
+      },
+      "recommended_next_action": "Investigate and rectify the blank transaction_ids, null and negative amounts, invalid dates, and unknown currency. Validate the data before proceeding to the next stage.",
+      "pass_to_next": {
+        "filename": "transactions_raw.csv",
+        "row_count": 500,
+        "columns": [
+          "transaction_id",
+          "merchant_name",
+          "category",
+          "amount",
+          "currency",
+          "transaction_date",
+          "status",
+          "customer_id",
+          "payment_method",
+          "merchant_city"
+        ],
+        "sample_issues": [
+          "4 blank transaction_ids",
+          "7 null amounts",
+          "3 negative amounts",
+          "2 invalid dates",
+          "1 unknown currency"
+        ],
+        "completeness_percentage": 95.6
+      },
+      "_stage": "Profile",
+      "_agent": "Profiler Agent",
+      "_timestamp": "2026-06-01T12:01:03.206857"
+    },
+    {
+      "findings": {
+        "blank_transaction_ids": {
+          "description": "There are 4 blank transaction_ids which are critical for identifying and tracking transactions.",
+          "classification": "block-load"
+        },
+        "null_amounts": {
+          "description": "There are 7 null amounts which are essential for financial calculations and reporting.",
+          "classification": "block-load"
+        },
+        "negative_amounts": {
+          "description": "There are 3 negative amounts which are not logically possible for transaction amounts.",
+          "classification": "quarantine"
+        },
+        "invalid_dates": {
+          "description": "There are 2 invalid dates which can cause issues in time-series analysis and reporting.",
+          "classification": "quarantine"
+        },
+        "unknown_currency": {
+          "description": "There is 1 unknown currency which can cause issues in financial aggregation and reporting.",
+          "classification": "quarantine"
+        }
+      },
+      "pass_to_next": {
+        "filename": "transactions_raw.csv",
+        "row_count": 500,
+        "columns": [
+          "transaction_id",
+          "merchant_name",
+          "category",
+          "amount",
+          "currency",
+          "transaction_date",
+          "status",
+          "customer_id",
+          "payment_method",
+          "merchant_city"
+        ],
+        "completeness_percentage": 95.6,
+        "issues": {
+          "blank_transaction_ids": {
+            "count": 4,
+            "classification": "block-load"
+          },
+          "null_amounts": {
+            "count": 7,
+            "classification": "block-load"
+          },
+          "negative_amounts": {
+            "count": 3,
+            "classification": "quarantine"
+          },
+          "invalid_dates": {
+            "count": 2,
+            "classification": "quarantine"
+          },
+          "unknown_currency": {
+            "count": 1,
+            "classification": "quarantine"
+          }
+        }
+      },
+      "_stage": "Validate",
+      "_agent": "Quality Agent",
+      "_timestamp": "2026-06-01T12:01:05.582576"
+    },
+    {
+      "load_decision": "quarantined_partial",
+      "findings": "The file has several critical issues such as blank transaction IDs and null amounts, which are classified as block-load. Additionally, there are some issues like negative amounts, invalid dates, and unknown currency that are classified as quarantine.",
+      "pass_to_next": {
+        "filename": "transactions_raw.csv",
+        "row_count": 500,
+        "completeness_percentage": 95.6,
+        "issues": {
+          "blank_transaction_ids": {
+            "count": 4,
+            "classification": "block-load"
+          },
+          "null_amounts": {
+            "count": 7,
+            "classification": "block-load"
+          },
+          "negative_amounts": {
+            "count": 3,
+            "classification": "quarantine"
+          },
+          "invalid_dates": {
+            "count": 2,
+            "classification": "quarantine"
+          },
+          "unknown_currency": {
+            "count": 1,
+            "classification": "quarantine"
+          }
+        }
+      },
+      "_stage": "LoadDecision",
+      "_agent": "Loader Agent",
+      "_timestamp": "2026-06-01T12:01:07.453383"
+    }
+  ],
+  "final_decision": "quarantined_partial",
+  "student_judgment": "The PIIAgent may mark the file safe while the QualityAgent later discovers critical data quality failures"
+}

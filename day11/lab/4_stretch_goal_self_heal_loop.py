@@ -235,12 +235,24 @@ def apply_fix(failure: dict, diagnosis: dict) -> dict:
             return {"status": "fix_failed", "error": str(e)}
 
     elif action == "cast_column_type":
-        # TODO: Students implement this
-        # Hint: The error says '' (empty string) in amount column
-        # Fix: cast to numeric, coerce errors to NaN, then fill NaN with 0 or median
-        return {"status": "not_implemented",
-                "action": action,
-                "message": "TODO: Implement cast_column_type fix (see docstring above)"}
+        try:
+            df = pd.read_csv(file_path)
+            err = failure.get("error_message", "")
+            col_name = None
+            if "column '" in err:
+                col_name = err.split("column '", 1)[1].split("'", 1)[0]
+            if not col_name or col_name not in df.columns:
+                return {"status": "fix_failed", "error": "Could not parse numeric column from error"}
+
+            before_invalid = pd.to_numeric(df[col_name], errors="coerce").isna().sum()
+            df[col_name] = pd.to_numeric(df[col_name], errors="coerce").fillna(0)
+            fixed_path = os.path.join(OUTPUT_DIR, f"fixed_{failure['dataset']}")
+            df.to_csv(fixed_path, index=False)
+            return {"status": "fixed", "action": action,
+                    "column_fixed": col_name, "rows_fixed": int(before_invalid),
+                    "output_file": fixed_path}
+        except Exception as e:
+            return {"status": "fix_failed", "error": str(e)}
 
     elif action == "escalate_to_human":
         return {"status": "escalated",

@@ -1,0 +1,12 @@
+[
+  {
+    "q": "Which payment methods are growing fastest this month compared to last month? Show percentage growth.",
+    "sql": "SELECT \n    payment_method, \n    COALESCE(((SUM(CASE \n                    WHEN transaction_date >= date_trunc('month', current_date) \n                    THEN amount \n                    ELSE 0 \n                 END) - SUM(CASE \n                            WHEN transaction_date >= date_trunc('month', current_date - INTERVAL '1 month') \n                            AND transaction_date < date_trunc('month', current_date) \n                            THEN amount \n                            ELSE 0 \n                         END)) * 100.0 / NULLIF(SUM(CASE \n                                                    WHEN transaction_date >= date_trunc('month', current_date - INTERVAL '1 month') \n                                                    AND transaction_date < date_trunc('month', current_date) \n                                                    THEN amount \n                                                    ELSE 0 \n                                                 END), 0)), 0) AS growth_percentage \nFROM \n    silver_transactions \nWHERE \n    transaction_date >= date_trunc('month', current_date - INTERVAL '2 months') \n    AND transaction_date < date_trunc('month', current_date) + INTERVAL '1 month' \n    AND payment_method IS NOT NULL \n    AND amount IS NOT NULL \nGROUP BY \n    payment_method \nORDER BY \n    growth_percentage DESC;",
+    "rounds": 3
+  },
+  {
+    "q": "Which 5 merchants have the highest refund rate? Show refund count and total transaction count.",
+    "sql": "SELECT m.merchant_id, m.merchant_name, SUM(CASE WHEN st.status = 'REFUNDED' THEN 1 ELSE 0 END) AS refund_count, COUNT(DISTINCT st.transaction_id) AS total_transaction_count, (SUM(CASE WHEN st.status = 'REFUNDED' THEN 1.0 ELSE 0 END) / NULLIF(COUNT(DISTINCT st.transaction_id), 0)) AS refund_rate FROM merchants m JOIN silver_transactions st ON m.merchant_id = st.merchant_id WHERE st.quality_flag = 'PASS' AND st.transaction_date BETWEEN DATE '2023-01-01' AND DATE '2023-12-31' AND m.merchant_id IS NOT NULL AND m.merchant_name IS NOT NULL GROUP BY m.merchant_id, m.merchant_name ORDER BY refund_rate DESC LIMIT 5;",
+    "rounds": 3
+  }
+]

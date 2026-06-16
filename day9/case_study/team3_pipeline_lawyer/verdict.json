@@ -1,0 +1,14 @@
+{
+  "team": "Team 3 \u2014 Pipeline Lawyer",
+  "pr": "PR #42 \u2014 Silver Load Idempotency Fix",
+  "verdict": "REQUEST CHANGES",
+  "reason": "set the seens_id inside the function",
+  "bug_found": true,
+  "bug_description": "seen_ids is a module-level global \u2014 on second call to load_silver() in same session, all IDs are already in seen_ids, so 0 rows are written. Silent failure \u2014 no exception raised.",
+  "correct_fix": "Move seen_ids = set() inside the load_silver() function body so it resets on every call. Better: use INSERT OR IGNORE / INSERT ... ON CONFLICT DO NOTHING at DB level.",
+  "what_ai_got_wrong": "Nova Pro (PRO-merge) focused on the fix for the original bug and may have missed the global state issue. Nova Lite was prompted to specifically look for repeated-call failures.",
+  "models_used": {
+    "round_1": "amazon.nova-pro-v1:0",
+    "round_2": "amazon.nova-lite-v1:0"
+  }
+}

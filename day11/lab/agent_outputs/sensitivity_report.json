@@ -1,0 +1,63 @@
+{
+  "agent": "PIISensitivityAgent",
+  "run_timestamp": "2026-06-01T15:23:08.473945",
+  "input_file": "customers_raw.csv",
+  "dataset_classification": "Restricted",
+  "load_restriction": "BLOCK load until PII masked \u2014 compliance sign-off required",
+  "masking_plan": [
+    {
+      "column": "full_name",
+      "pii_type": "full_name",
+      "sensitivity": "Confidential",
+      "confidence": "high",
+      "masking_strategy": "Pseudonymisation \u2014 replace with consistent fake name per customer_id",
+      "detect_method": "regex"
+    },
+    {
+      "column": "email_address",
+      "pii_type": "email_address",
+      "sensitivity": "Confidential",
+      "confidence": "high",
+      "masking_strategy": "Domain-preserve masking: user part \u2192 hash@domain.com",
+      "detect_method": "regex"
+    },
+    {
+      "column": "phone_number",
+      "pii_type": "aadhaar_number",
+      "sensitivity": "Restricted",
+      "confidence": "high",
+      "masking_strategy": "Redaction \u2014 store only last 4 digits (UIDAI guideline)",
+      "detect_method": "regex"
+    },
+    {
+      "column": "pan_number",
+      "pii_type": "pan_number",
+      "sensitivity": "Restricted",
+      "confidence": "high",
+      "masking_strategy": "Format-preserving tokenisation (PAN structure preserved, value replaced)",
+      "detect_method": "regex"
+    },
+    {
+      "column": "account_number",
+      "pii_type": "aadhaar_number",
+      "sensitivity": "Restricted",
+      "confidence": "high",
+      "masking_strategy": "Redaction \u2014 store only last 4 digits (UIDAI guideline)",
+      "detect_method": "regex"
+    },
+    {
+      "column": "customer_id",
+      "pii_type": "Identifier",
+      "sensitivity": "Confidential",
+      "confidence": "llm",
+      "masking_strategy": "Mask or anonymize before sharing externally.",
+      "detect_method": "llm"
+    }
+  ],
+  "compliance_notes": [
+    "PAN numbers: RBI circular 2023-09 requires format-preserving tokenisation",
+    "Aadhaar: UIDAI mandate \u2014 only last 4 digits may be stored",
+    "All Restricted data requires DLP tool scan before prod load"
+  ],
+  "student_judgment": "No, we should not always run the LLM on every column because it increases cost and latency. The best approach is a hybrid model: use regex first for fast, low-cost detection and invoke the LLM only for columns that remain unclassified or have low confidence, since the compliance risk of missing PII is much higher than the additional LLM cost."
+}

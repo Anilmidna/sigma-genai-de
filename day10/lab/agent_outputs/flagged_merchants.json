@@ -1,0 +1,12 @@
+[
+  {
+    "merchant_id": "MRC007",
+    "reason": "High transaction volume (858 txns) with suspiciously low average amount ($6.93)",
+    "flagged_at": "2026-05-29T12:14:05.839131"
+  },
+  {
+    "merchant_id": "MRC006",
+    "reason": "High transaction volume (849 txns) with suspiciously low average amount ($7.15)",
+    "flagged_at": "2026-05-29T12:14:05.839292"
+  }
+]

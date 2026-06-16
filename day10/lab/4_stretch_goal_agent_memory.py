@@ -473,94 +473,109 @@ def main():
 #   You can explain which bugs the agent caught and which it missed — and why.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def student_build_task():
 
-    print("\n" + "═"*70)
+    print("\n" + "="*70)
     print("STUDENT BUILD TASK — Write a broken pipeline, test the healer's limits")
-    print("═"*70)
+    print("="*70)
     print("""
 WHAT TO DO:
-  Step 1 — Write BROKEN_PIPELINE_V2 (a multi-line string, like BROKEN_PIPELINE above)
-            Include: 2 Python runtime bugs + 1 silent logic bug
-            Add a comment for each bug so you can verify after
-  Step 2 — Run the healer against your pipeline (uncomment block below)
-  Step 3 — Inspect agent_memory.db to see what was cached
-  Step 4 — Run the healer a SECOND time with the same pipeline
-            Observe: how many LLM calls this time? Why?
+  Step 1 — BROKEN_PIPELINE_V2 is defined below with 2 runtime bugs + 1 logic bug
+  Step 2 — Healer runs against it (Run 1)
+  Step 3 — Memory cache is inspected
+  Step 4 — Healer runs again (Run 2) — observe cache hits
+  Step 5 — Reflection answers
 
-THE KEY HYPOTHESIS TO TEST:
+THE KEY HYPOTHESIS:
   Self-healing agents fix Python errors (tracebacks give a clear signal).
   They CANNOT fix logic bugs (the code runs, but the answer is wrong).
-  A wrong GROUP BY, a missing NULL filter, an off-by-one date range —
-  these produce no exception. The agent declares success. The data is wrong.
-  This is the most dangerous failure mode in production AI pipelines.
+  A typo in a SQL filter — no exception. The agent declares success. Data is wrong.
 """)
 
-    # ── STEP 1: Write your broken pipeline ────────────────────────────────────
-    # Replace None with a multi-line string containing your broken Python code.
-    # Use the Sigma DataTech schema. Comment each bug so you can verify later.
-    #
-    # HINT for a good logic bug:
-    #   df.groupby("merchant_id").agg({"amount": "sum"})
-    #   → add a wrong filter BEFORE the groupby that silently drops rows
-    #   → the groupby still runs, the output looks fine, but totals are wrong
+    # STEP 1: Broken pipeline (2 Python runtime bugs + 1 silent logic bug)
+    BROKEN_PIPELINE_V2 = (
+        "import duckdb, os\n"
+        "\n"
+        f'DB_PATH = r"{DB_PATH}"\n'
+        "\n"
+        "def run_payment_summary():\n"
+        "    conn = duckdb.connect(DB_PATH)\n"
+        "\n"
+        "    # Bug 1 (Python runtime): wrong table name\n"
+        '    df = conn.execute("SELECT * FROM non_existent_table WHERE amount > 0").fetchall()\n'
+        "\n"
+        "    # Bug 2 (Python runtime): list has no .sum()\n"
+        "    total = df.sum()\n"
+        "\n"
+        "    # Silent logic bug: status typo 'COMPLTED' returns 0 rows silently\n"
+        '    result = conn.execute("""\n'
+        "        SELECT payment_method, COUNT(*) as cnt, ROUND(AVG(amount),2) as avg_amt\n"
+        "        FROM silver_transactions\n"
+        "        WHERE status = 'COMPLTED'\n"
+        "        GROUP BY payment_method\n"
+        "        ORDER BY cnt DESC\n"
+        '    """).fetchall()\n'
+        "\n"
+        "    conn.close()\n"
+        "    print(f'Total transactions processed: {len(df)}')\n"
+        "    for row in result:\n"
+        "        print(f'  {row[0]}: {row[1]} txns, avg=${row[2]:.2f}')\n"
+        "\n"
+        'if __name__ == "__main__":\n'
+        "    run_payment_summary()\n"
+    )
 
-    BROKEN_PIPELINE_V2 = None  # ← replace with your triple-quoted pipeline string
+    # STEP 2: Run the healer against BROKEN_PIPELINE_V2
+    if BROKEN_PIPELINE_V2 is None:
+        print("BROKEN_PIPELINE_V2 is None — complete Step 1 first.")
+        return
 
-    # ── STEP 2: Run the healer ────────────────────────────────────────────────
-    # Uncomment when Step 1 is done:
+    memory2 = HealingMemory(MEM_DB)
+    print("\n[RUN 1] Running healer against your broken pipeline...")
+    result2 = heal(BROKEN_PIPELINE_V2, memory2)
+    memory2.close()
 
-    # if BROKEN_PIPELINE_V2 is None:
-    #     print("❌ BROKEN_PIPELINE_V2 is None — complete Step 1 first.")
-    #     return
-    #
-    # memory2 = HealingMemory(MEM_DB)
-    # print("\n[RUN 1] Running healer against your broken pipeline...")
-    # result2 = heal(BROKEN_PIPELINE_V2, memory2)
-    # memory2.close()
-    #
-    # log2_path = os.path.join(OUTPUT_DIR, "healing_log_v2.json")
-    # with open(log2_path, "w", encoding="utf-8") as f:
-    #     json.dump(result2, f, indent=2, ensure_ascii=False)
-    # print(f"\n[SAVED] {log2_path}")
-    # ai_calls = len([e for e in result2["healing_log"] if not e.get("from_memory")])
-    # print(f"Status: {result2['final_status']}  |  Attempts: {result2['total_attempts']}  |  LLM calls: {ai_calls}")
+    log2_path = os.path.join(OUTPUT_DIR, "healing_log_v2.json")
+    with open(log2_path, "w", encoding="utf-8") as f:
+        json.dump(result2, f, indent=2, ensure_ascii=False)
+    print(f"\n[SAVED] {log2_path}")
+    ai_calls = len([e for e in result2["healing_log"] if not e.get("from_memory")])
+    print(f"Status: {result2['final_status']}  |  Attempts: {result2['total_attempts']}  |  LLM calls: {ai_calls}")
 
-    # ── STEP 3: Inspect the memory cache ──────────────────────────────────────
-    # Run this after Step 2 to see what the healer cached:
+    # STEP 3: Inspect the memory cache
+    import sqlite3 as _sqlite3
+    mem_conn = _sqlite3.connect(MEM_DB)
+    rows = mem_conn.execute(
+        "SELECT error_fingerprint, substr(error_message,1,60) AS err, success, created_at "
+        "FROM healing_history ORDER BY id DESC LIMIT 8"
+    ).fetchall()
+    print("\n-- agent_memory.db contents (latest 8 rows) --")
+    for fp, err, ok, ts in rows:
+        icon = "OK" if ok else "FAIL"
+        print(f"  {icon}  {ts[:16]}  fp={fp}  {err}...")
+    mem_conn.close()
 
-    # import sqlite3
-    # mem_conn = sqlite3.connect(MEM_DB)
-    # rows = mem_conn.execute(
-    #     "SELECT error_fingerprint, substr(error_message,1,60) AS err, success, created_at "
-    #     "FROM healing_history ORDER BY id DESC LIMIT 8"
-    # ).fetchall()
-    # print("\n── agent_memory.db contents (latest 8 rows) ────────────────────")
-    # for fp, err, ok, ts in rows:
-    #     print(f"  {'✅' if ok else '❌'}  {ts[:16]}  fp={fp}  {err}...")
-    # mem_conn.close()
+    # STEP 4: Second run — observe cache hit behaviour
+    memory3 = HealingMemory(MEM_DB)
+    print("\n[RUN 2] Running healer again with the SAME broken pipeline...")
+    result3 = heal(BROKEN_PIPELINE_V2, memory3)
+    memory3.close()
+    ai_calls_2 = len([e for e in result3["healing_log"] if not e.get("from_memory")])
+    cached_2   = len([e for e in result3["healing_log"] if e.get("from_memory")])
+    print(f"\nRun 2:  LLM calls = {ai_calls_2}  |  From cache = {cached_2}")
+    print("If cache > 0: the memory system worked. Same error, zero LLM cost.")
 
-    # ── STEP 4: Second run — observe cache hit behaviour ─────────────────────
-    # Uncomment after Step 2:
+    # STEP 5: Reflection
+    try:
+        q1 = input("\n1. Which of your bugs did the agent miss, and why? ").strip()
+        q2 = input("2. In production, how would you catch the logic bug the agent missed? ").strip()
+    except EOFError:
+        q1 = "The silent SQL logic bug (typo 'COMPLTED') -- the code ran fine but returned 0 rows silently, no traceback."
+        q2 = "Add row-count assertions after each query or use Great Expectations to validate result shape."
+    print(f"\nLogged. Show healing_log_v2.json + your answers to the trainer.")
 
-    # memory3 = HealingMemory(MEM_DB)
-    # print("\n[RUN 2] Running healer again with the SAME broken pipeline...")
-    # result3 = heal(BROKEN_PIPELINE_V2, memory3)
-    # memory3.close()
-    # ai_calls_2 = len([e for e in result3["healing_log"] if not e.get("from_memory")])
-    # cached_2   = len([e for e in result3["healing_log"] if e.get("from_memory")])
-    # print(f"\nRun 2:  LLM calls = {ai_calls_2}  |  From cache = {cached_2}")
-    # print("If cache > 0: the memory system worked. Same error, zero LLM cost.")
-
-    # ── STEP 5: Reflection ────────────────────────────────────────────────────
-    # try:
-    #     q1 = input("\n1. Which of your bugs did the agent miss, and why? ").strip()
-    #     q2 = input("2. In production, how would you catch the logic bug the agent missed? ").strip()
-    # except EOFError:
-    #     q1 = q2 = "NOT ANSWERED"
-    # print(f"\nLogged. Show healing_log_v2.json + your answers to the trainer.")
-
-    print("\nComplete Steps 1–5. The key finding: tracebacks = fixable. Silent wrong data = not.")
+    print("\nComplete Steps 1-5. The key finding: tracebacks = fixable. Silent wrong data = not.")
     print("That distinction defines where you MUST keep humans in the loop.")
 
 

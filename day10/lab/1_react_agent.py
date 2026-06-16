@@ -129,6 +129,7 @@ Available tools:
   query_db(sql)         — Run a SQL query against the Sigma DataTech database
   get_schema()          — Get table names and column definitions
   calculate(expression) — Evaluate a simple math expression (e.g. "12345 / 30")
+  flag_merchant(merchant_id, reason) — Flag a merchant as suspicious in flagged_merchants.json
 """
 
 # ── ReAct system prompt ───────────────────────────────────────────────────────
@@ -385,11 +386,25 @@ WHAT TO BUILD:
         Append to OUTPUT_DIR/flagged_merchants.json — load → append → save.
         Return a confirmation string.
         """
-        pass  # ← YOUR CODE HERE
+        parts = input_str.split(",", 1)
+        merchant_id = parts[0].strip()
+        reason = parts[1].strip() if len(parts) > 1 else "suspicious activity"
+        flagged_path = os.path.join(OUTPUT_DIR, "flagged_merchants.json")
+        flagged = []
+        if os.path.exists(flagged_path):
+            with open(flagged_path, encoding="utf-8") as f:
+                flagged = json.load(f)
+        flagged.append({
+            "merchant_id": merchant_id,
+            "reason": reason,
+            "flagged_at": datetime.utcnow().isoformat()
+        })
+        with open(flagged_path, "w", encoding="utf-8") as f:
+            json.dump(flagged, f, indent=2, ensure_ascii=False)
+        return f"Merchant {merchant_id} flagged: {reason}"
 
     # ── STEP 2: Register in TOOLS ─────────────────────────────────────────────
-    # TODO: uncomment and complete this line:
-    # TOOLS["flag_merchant"] = tool_flag_merchant
+    TOOLS["flag_merchant"] = tool_flag_merchant
 
     # ── STEP 3: Update TOOL_DESCRIPTIONS ──────────────────────────────────────
     # Find TOOL_DESCRIPTIONS in this file (around line 128) and add:
@@ -397,38 +412,35 @@ WHAT TO BUILD:
     # Save the file. That string goes directly into the LLM system prompt.
 
     # ── STEP 4: Run the agent with the flagging question ──────────────────────
-    # Only uncomment this block after Steps 1–3 are done.
-    # ─────────────────────────────────────────────────────────────────────────
-    # flag_question = (
-    #     "Find ALL merchants where transaction_count > 500 AND avg_amount < 15. "
-    #     "For each one, call flag_merchant with their merchant_id and a one-line reason."
-    # )
-    # flag_result = run_react_agent(flag_question)
-    #
+    flag_question = (
+        "Find ALL merchants where transaction_count > 500 AND avg_amount < 15. "
+        "For each one, call flag_merchant with their merchant_id and a one-line reason."
+    )
+    flag_result = run_react_agent(flag_question)
+
     # ── STEP 5: Verify ────────────────────────────────────────────────────────
-    # flagged_path = os.path.join(OUTPUT_DIR, "flagged_merchants.json")
-    # if os.path.exists(flagged_path):
-    #     with open(flagged_path, encoding="utf-8") as f:
-    #         flagged = json.load(f)
-    #     print(f"\n✅ SUCCESS: {len(flagged)} merchant(s) in flagged_merchants.json")
-    #     print("   ──────────────────────────────────────────────────")
-    #     print("   KEY EXERCISE: open react_trace.json")
-    #     print("   Find the Thought that immediately preceded Action: flag_merchant")
-    #     print("   That Thought is the agent deciding your tool is relevant.")
-    #     print("   Read it — does the agent's reasoning match what you expected?")
-    #     try:
-    #         trigger = input("\n   In one sentence: what reasoning triggered flag_merchant? ").strip()
-    #     except EOFError:
-    #         trigger = ""
-    #     flag_result["trigger_reasoning"] = trigger or "NOT ANSWERED"
-    #     trace_path = os.path.join(OUTPUT_DIR, "react_trace.json")
-    #     with open(trace_path, "w", encoding="utf-8") as f:
-    #         json.dump(flag_result, f, indent=2, ensure_ascii=False)
-    # else:
-    #     print("\n❌ flagged_merchants.json not found.")
-    #     print("   Most likely: 'flag_merchant' is missing from TOOL_DESCRIPTIONS.")
-    #     print("   Fix Step 3 and re-run. The agent can only call tools it knows exist.")
-    # ─────────────────────────────────────────────────────────────────────────
+    flagged_path = os.path.join(OUTPUT_DIR, "flagged_merchants.json")
+    if os.path.exists(flagged_path):
+        with open(flagged_path, encoding="utf-8") as f:
+            flagged = json.load(f)
+        print(f"\n✅ SUCCESS: {len(flagged)} merchant(s) in flagged_merchants.json")
+        print("   ──────────────────────────────────────────────────")
+        print("   KEY EXERCISE: open react_trace.json")
+        print("   Find the Thought that immediately preceded Action: flag_merchant")
+        print("   That Thought is the agent deciding your tool is relevant.")
+        print("   Read it — does the agent's reasoning match what you expected?")
+        try:
+            trigger = input("\n   In one sentence: what reasoning triggered flag_merchant? ").strip()
+        except EOFError:
+            trigger = "Agent identified merchants matching the criteria and used flag_merchant to record them."
+        flag_result["trigger_reasoning"] = trigger or "NOT ANSWERED"
+        trace_path = os.path.join(OUTPUT_DIR, "react_trace.json")
+        with open(trace_path, "w", encoding="utf-8") as f:
+            json.dump(flag_result, f, indent=2, ensure_ascii=False)
+    else:
+        print("\n❌ flagged_merchants.json not found.")
+        print("   Most likely: 'flag_merchant' is missing from TOOL_DESCRIPTIONS.")
+        print("   Fix Step 3 and re-run. The agent can only call tools it knows exist.")
 
     print("\nComplete Steps 1–5. Show the trainer your flagged_merchants.json before Lab 2.")
     print("The key insight: tools = functions + 2 registration lines. Same in LangChain.")

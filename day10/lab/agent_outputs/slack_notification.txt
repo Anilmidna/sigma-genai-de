@@ -1,0 +1,6 @@
+*SIGMA DATATECH DATA QUALITY ALERT*
+*Date:*    2026-05-29
+*Status:*  WARNING
+*Issues:*  5 total — 0 critical, 3 high
+*Top fix:* Update NULL amount rows to 0 and NULL transaction_date to CURRENT_DATE immediately.
+*Next review:* 2026-05-30git status

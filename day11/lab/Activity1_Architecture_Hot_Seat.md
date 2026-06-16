@@ -47,8 +47,8 @@
 ## Scenario Cards (print and cut — one per team)
 
 ---
-
-### CARD A — Team 1 & 2
+A 
+### CRD A — Team 1 & 2
 
 **Scenario: The Midnight Merchant**
 

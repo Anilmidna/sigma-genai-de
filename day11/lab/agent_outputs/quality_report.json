@@ -1,0 +1,137 @@
+{
+  "agent": "IngestionQualityAgent",
+  "version": "1.0",
+  "run_timestamp": "2026-06-01T14:30:23.834742",
+  "input_file": "transactions_raw.csv",
+  "profile_summary": {
+    "total_rows": 500,
+    "total_columns": 10,
+    "column_names": [
+      "transaction_id",
+      "merchant_name",
+      "category",
+      "amount",
+      "currency",
+      "transaction_date",
+      "status",
+      "customer_id",
+      "payment_method",
+      "merchant_city"
+    ],
+    "completeness_pct": 99.0
+  },
+  "expectations_generated": 10,
+  "checks_passed": 3,
+  "checks_failed": 7,
+  "auto_fixes": [
+    {
+      "fix": "null_amount_filled_with_median",
+      "rows_affected": 21,
+      "value_used": 23877.93
+    },
+    {
+      "fix": "invalid_dates_marked",
+      "rows_affected": 11
+    },
+    {
+      "fix": "whitespace_stripped",
+      "columns": [
+        "transaction_id",
+        "merchant_name",
+        "category",
+        "currency",
+        "transaction_date",
+        "status",
+        "customer_id",
+        "payment_method",
+        "merchant_city"
+      ]
+    }
+  ],
+  "clean_rows": 476,
+  "quarantined_rows": 24,
+  "quarantine_pct": 4.8,
+  "load_decision": {
+    "load_decision": "quarantine_and_load",
+    "load_decision_reason": "Critical checks failed and quarantine percentage is above 10%.",
+    "alert_required": true,
+    "recommended_actions": [
+      "Investigate the root cause of null and non-unique 'transaction_id' values.",
+      "Review and correct the 'amount' values that fall outside the expected range.",
+      "Validate the format and values of 'transaction_date', 'currency', and 'merchant_name' columns."
+    ]
+  },
+  "check_details": [
+    {
+      "expectation": "expect_column_values_to_not_be_null",
+      "column": "transaction_id",
+      "severity": "critical",
+      "passed": false,
+      "failed_row_count": 24
+    },
+    {
+      "expectation": "expect_column_values_to_be_unique",
+      "column": "transaction_id",
+      "severity": "critical",
+      "passed": false,
+      "failed_row_count": 24
+    },
+    {
+      "expectation": "expect_column_values_to_be_between",
+      "column": "amount",
+      "severity": "high",
+      "passed": false,
+      "failed_row_count": 38
+    },
+    {
+      "expectation": "expect_column_values_to_match_regex",
+      "column": "transaction_date",
+      "severity": "high",
+      "passed": false,
+      "failed_row_count": 11
+    },
+    {
+      "expectation": "expect_column_values_to_be_in_set",
+      "column": "currency",
+      "severity": "high",
+      "passed": false,
+      "failed_row_count": 10
+    },
+    {
+      "expectation": "expect_column_values_to_be_in_set",
+      "column": "status",
+      "severity": "high",
+      "passed": true,
+      "failed_row_count": 0
+    },
+    {
+      "expectation": "expect_column_values_to_not_be_null",
+      "column": "merchant_name",
+      "severity": "medium",
+      "passed": false,
+      "failed_row_count": 5
+    },
+    {
+      "expectation": "expect_column_values_to_not_be_null",
+      "column": "category",
+      "severity": "medium",
+      "passed": true,
+      "failed_row_count": 0
+    },
+    {
+      "expectation": "expect_column_values_to_not_be_null",
+      "column": "amount",
+      "severity": "medium",
+      "passed": false,
+      "failed_row_count": 21
+    },
+    {
+      "expectation": "expect_column_values_to_not_be_null",
+      "column": "customer_id",
+      "severity": "medium",
+      "passed": true,
+      "failed_row_count": 0
+    }
+  ],
+  "student_judgment": "The right call is quarantine_and_load: load the 476 clean rows and hold the 24 bad rows for review. The guardrail should be a policy that blocks loading any row that fails a critical quality rule such as a null or duplicate transaction_id."
+}
