@@ -1,0 +1,92 @@
+{
+  "demo_questions": [
+    "Which merchant had the highest revenue?",
+    "How many of their transactions failed?",
+    "What payment method did those customers prefer?"
+  ],
+  "turns": [
+    {
+      "turn": 1,
+      "question": "Which merchant had the highest revenue?",
+      "sql_generated": "SELECT\n  MERCHANT_NAME,\n  SUM(AMOUNT) AS REVENUE\nFROM\n  FACT_TRANSACTIONS\nJOIN\n  DIM_MERCHANT ON FACT_TRANSACTIONS.MERCHANT_ID = DIM_MERCHANT.MERCHANT_ID\nWHERE\n  STATUS = 'COMPLETED'\nGROUP BY\n  MERCHANT_NAME\nORDER BY\n  REVENUE DESC\nLIMIT 1;",
+      "answer_summary": "MERCHANT_NAME=Zepto, REVENUE=5485.49",
+      "row_count": 1,
+      "elapsed_seconds": 12.908803224563599,
+      "error": null
+    },
+    {
+      "turn": 2,
+      "question": "How many of their transactions failed?",
+      "sql_generated": "SELECT\n  COUNT(*) AS FAILED_TRANSACTIONS\nFROM\n  FACT_TRANSACTIONS\nJOIN\n  DIM_MERCHANT ON FACT_TRANSACTIONS.MERCHANT_ID = DIM_MERCHANT.MERCHANT_ID\nWHERE\n  STATUS = 'FAILED'\n  AND MERCHANT_NAME = 'Zepto';",
+      "answer_summary": "FAILED_TRANSACTIONS=0",
+      "row_count": 1,
+      "elapsed_seconds": 20.249239683151245,
+      "error": null
+    },
+    {
+      "turn": 3,
+      "question": "What payment method did those customers prefer?",
+      "sql_generated": "SELECT\n  PAYMENT_METHOD,\n  COUNT(*) AS PREFERRED_PAYMENT_METHOD\nFROM\n  FACT_TRANSACTIONS\nJOIN\n  DIM_MERCHANT ON FACT_TRANSACTIONS.MERCHANT_ID = DIM_MERCHANT.MERCHANT_ID\nWHERE\n  MERCHANT_NAME = 'Zepto'\nGROUP BY\n  PAYMENT_METHOD\nORDER BY\n  PREFERRED_PAYMENT_METHOD DESC\nLIMIT 1;",
+      "answer_summary": "PAYMENT_METHOD=UPI, PREFERRED_PAYMENT_METHOD=4",
+      "row_count": 1,
+      "elapsed_seconds": 16.615612983703613,
+      "error": null
+    }
+  ],
+  "full_history": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Which merchant had the highest revenue?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "SQL executed: SELECT\n  MERCHANT_NAME,\n  SUM(AMOUNT) AS REVENUE\nFROM\n  FACT_TRANSACTIONS\nJOIN\n  DIM_MERCHANT ON FACT_TRANSACTIONS.MERCHANT_ID = DIM_MERCHANT.MERCHANT_ID\nWHERE\n  STATUS = 'COMPLETED'\nGROUP BY\n  MERCHANT_NAME\nORDER BY\n  REVENUE DESC\nLIMIT 1; | Result: MERCHANT_NAME=Zepto, REVENUE=5485.49"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "How many of their transactions failed?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "SQL executed: SELECT\n  COUNT(*) AS FAILED_TRANSACTIONS\nFROM\n  FACT_TRANSACTIONS\nJOIN\n  DIM_MERCHANT ON FACT_TRANSACTIONS.MERCHANT_ID = DIM_MERCHANT.MERCHANT_ID\nWHERE\n  STATUS = 'FAILED'\n  AND MERCHANT_NAME = 'Zepto'; | Result: FAILED_TRANSACTIONS=0"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What payment method did those customers prefer?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "SQL executed: SELECT\n  PAYMENT_METHOD,\n  COUNT(*) AS PREFERRED_PAYMENT_METHOD\nFROM\n  FACT_TRANSACTIONS\nJOIN\n  DIM_MERCHANT ON FACT_TRANSACTIONS.MERCHANT_ID = DIM_MERCHANT.MERCHANT_ID\nWHERE\n  MERCHANT_NAME = 'Zepto'\nGROUP BY\n  PAYMENT_METHOD\nORDER BY\n  PREFERRED_PAYMENT_METHOD DESC\nLIMIT 1; | Result: PAYMENT_METHOD=UPI, PREFERRED_PAYMENT_METHOD=4"
+        }
+      ]
+    }
+  ]
+}

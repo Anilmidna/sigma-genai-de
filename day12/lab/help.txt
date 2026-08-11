@@ -1,0 +1,158 @@
+BEDROCK-AGENT()                                                BEDROCK-AGENT()
+
+NNAAMMEE
+       bedrock-agent -
+
+DDEESSCCRRIIPPTTIIOONN
+       Describes the API operations for creating and managing Amazon Bedrock
+       agents.
+
+AAVVAAIILLAABBLLEE CCOOMMMMAANNDDSS
+
+       +o associate-agent-collaborator
+
+       +o associate-agent-knowledge-base
+
+       +o create-agent
+
+       +o create-agent-action-group
+
+       +o create-agent-alias
+
+       +o create-data-source
+
+       +o create-flow
+
+       +o create-flow-alias
+
+       +o create-flow-version
+
+       +o create-knowledge-base
+
+       +o create-prompt
+
+       +o create-prompt-version
+
+       +o delete-agent
+
+       +o delete-agent-action-group
+
+       +o delete-agent-alias
+
+       +o delete-agent-version
+
+       +o delete-data-source
+
+       +o delete-flow
+
+       +o delete-flow-alias
+
+       +o delete-flow-version
+
+       +o delete-knowledge-base
+
+       +o delete-knowledge-base-documents
+
+       +o delete-prompt
+
+       +o disassociate-agent-collaborator
+
+       +o disassociate-agent-knowledge-base
+
+       +o get-agent
+
+       +o get-agent-action-group
+
+       +o get-agent-alias
+
+       +o get-agent-collaborator
+
+       +o get-agent-knowledge-base
+
+       +o get-agent-version
+
+       +o get-data-source
+
+       +o get-flow
+
+       +o get-flow-alias
+
+       +o get-flow-version
+
+       +o get-ingestion-job
+
+       +o get-knowledge-base
+
+       +o get-knowledge-base-documents
+
+       +o get-prompt
+
+       +o help
+
+       +o ingest-knowledge-base-documents
+
+       +o list-agent-action-groups
+
+       +o list-agent-aliases
+
+       +o list-agent-collaborators
+
+       +o list-agent-knowledge-bases
+
+       +o list-agent-versions
+
+       +o list-agents
+
+       +o list-data-sources
+
+       +o list-flow-aliases
+
+       +o list-flow-versions
+
+       +o list-flows
+
+       +o list-ingestion-jobs
+
+       +o list-knowledge-base-documents
+
+       +o list-knowledge-bases
+
+       +o list-prompts
+
+       +o list-tags-for-resource
+
+       +o prepare-agent
+
+       +o prepare-flow
+
+       +o start-ingestion-job
+
+       +o stop-ingestion-job
+
+       +o tag-resource
+
+       +o untag-resource
+
+       +o update-agent
+
+       +o update-agent-action-group
+
+       +o update-agent-alias
+
+       +o update-agent-collaborator
+
+       +o update-agent-knowledge-base
+
+       +o update-data-source
+
+       +o update-flow
+
+       +o update-flow-alias
+
+       +o update-knowledge-base
+
+       +o update-prompt
+
+       +o validate-flow-definition
+
+                                                               BEDROCK-AGENT()

@@ -88,10 +88,12 @@ def health_check():
 def invoke_supervisor(message: str, session_id: str):
     if not SUPERVISOR_ID:
         print("\n[ERROR] SUPERVISOR_AGENT_ID not set in .env")
-        print("  Run: python lab/create_agents.py")
+        print("  Get this from Anil at the start of class.")
         sys.exit(1)
 
-    bedrock = boto3.client("bedrock-agent-runtime", region_name=REGION)
+    from botocore.config import Config
+    config = Config(read_timeout=600, connect_timeout=600, retries={"max_attempts": 3})
+    bedrock = boto3.client("bedrock-agent-runtime", region_name=REGION, config=config)
 
     print("\n" + "=" * 60)
     print("SIGMA INTELLIGENCE PLATFORM — SUPERVISOR AGENT")
@@ -119,6 +121,7 @@ def invoke_supervisor(message: str, session_id: str):
             agentAliasId=SUPERVISOR_ALIAS,
             sessionId=session_id,
             inputText=message,
+            enableTrace=True,
         )
 
         # Stream the agent's reasoning and tool calls as they arrive

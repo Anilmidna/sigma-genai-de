@@ -1,0 +1,51 @@
+{
+  "file": "queries/customer_spend.sql",
+  "reviewed_at": "2026-05-25T16:11:43.809401",
+  "issues_found": 5,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Incorrect JOIN behavior",
+        "line": "LEFT JOIN fact_transactions t ON c.customer_id = t.customer_id\nWHERE t.status = 'COMPLETED'",
+        "problem": "The LEFT JOIN followed by a WHERE clause on the right table effectively turns it into an INNER JOIN, dropping customers with no completed transactions.",
+        "fix": "Use INNER JOIN if the intention is to only include customers with completed transactions."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Missing GROUP BY column",
+        "line": "GROUP BY c.customer_name, c.email",
+        "problem": "The query is missing c.tier in the GROUP BY clause, which will cause errors in some SQL databases.",
+        "fix": "Add c.tier to the GROUP BY clause."
+      },
+      {
+        "severity": "High",
+        "category": "Security",
+        "title": "PII exposure",
+        "line": "c.email",
+        "problem": "Selecting email exposes Personally Identifiable Information (PII), which should be avoided unless necessary.",
+        "fix": "Remove c.email from the SELECT clause."
+      },
+      {
+        "severity": "Medium",
+        "category": "Performance",
+        "title": "No date filter",
+        "line": "WHERE t.status = 'COMPLETED'",
+        "problem": "The query lacks a date filter, leading to a full table scan on the fact_transactions table, which can be inefficient.",
+        "fix": "Add a date filter to limit the data scanned, e.g., WHERE transaction_date >= '2023-01-01'."
+      },
+      {
+        "severity": "Low",
+        "category": "Readability",
+        "title": "Lack of comments",
+        "line": "Entire query",
+        "problem": "The query lacks comments explaining complex logic or business rules.",
+        "fix": "Add comments to explain the purpose of the query and any complex logic."
+      }
+    ],
+    "corrected_sql": "SELECT c.customer_name, c.tier,\n       SUM(t.amount) as lifetime_value,\n       COUNT(t.transaction_id) as total_orders\nFROM dim_customer c\nINNER JOIN fact_transactions t ON c.customer_id = t.customer_id\nWHERE t.status = 'COMPLETED'\nGROUP BY c.customer_name, c.tier\nHAVING SUM(t.amount) > 1000\nORDER BY lifetime_value DESC;",
+    "summary": "The query had issues with incorrect JOIN behavior, missing GROUP BY column, PII exposure, lack of date filter, and readability. The corrected query addresses these issues."
+  }
+}

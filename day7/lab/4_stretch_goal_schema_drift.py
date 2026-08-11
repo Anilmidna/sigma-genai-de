@@ -71,6 +71,7 @@ OUTPUT_DIR = "pipeline_brain"
 DRIFTED_COLUMNS = {
     "payment_gateway":  "string",    # new: which payment processor handled the txn
     "discount_amount":  "float",     # new: discount applied at checkout
+    "refund_flag": "boolean",
 }
 
 # ── SYSTEM PROMPT ──────────────────────────────────────────────────────────

@@ -58,13 +58,13 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 sys.path.insert(0, os.path.dirname(__file__))
-from sample_data import (
+from devops_brain.sample_data import (
     transform_bronze_to_silver,
     compute_merchant_performance,
     compute_daily_summary,
     TRANSACTIONS_CLEAN,
     TRANSACTIONS_DIRTY,
-    MERCHANTS,
+    MERCHANTS
 )
 
 # ── Configuration ──────────────────────────────────────────────────────────

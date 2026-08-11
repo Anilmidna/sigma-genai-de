@@ -1,0 +1,177 @@
+Team Matrix  ·  Merchant Fraud Detection Feed
+
+TEAM MEMBERS	Atu Ur Rehman  |  Sharoz Farhan Afridi  |  Sneha Sahu  |  Devashish Bhardwaj
+
+SCENARIO	"The risk team suspects some merchants have unusually high failure rates. Build a pipeline that reads daily transactions, calculates failure_rate per merchant per day, flags merchants where failure_rate > 30% as suspicious, and writes a merchant_risk_scores table with a confidence_level column.
+
+(Hint: Calculate failure_rate per merchant per day. Flag merchants > 30% as suspicious.)"
+
+PIPELINE SPEC — Fill every section belowOBJECTIVE	[ 1–2 sentences: what business problem does this solve? ]→ Your answer	This pipeline detects merchants with abnormally high transaction failure rates on a daily basis, enabling the risk team to act quickly on suspicious merchant behaviour before financial exposure grows. By automating the flagging logic, it replaces ad-hoc manual queries with a reliable, scheduled signal.DATA SOURCES	[ Source name, format, approximate row count per day ]→ Your answer	"Source:transactions_daily — raw transaction event log
+
+Format:CSV / Parquet, delivered to landing zone daily at ~02:00 UTC
+
+Row count/day:~1M–5M rows (depending on volume spike windows)
+
+Key columns:
+
+transaction_id
+
+merchant_id
+
+txn_timestamp
+
+amount
+
+status (SUCCESS / FAILED / PENDING)
+
+currency"BRONZE LAYER→ Your answer	"Columns ingested:
+
+transaction_id
+
+merchant_id
+
+txn_timestamp
+
+amount
+
+status
+
+currency
+
+Metadata added:
+
+_ingest_ts      : pipeline run timestamp
+
+_source_file    : source filename
+
+_batch_date     : ingestion date partition
+
+Partition strategy:
+
+Partitioned by _batch_date (daily partitioning).
+
+No transformations are applied at this stage.
+
+Bronze layer stores an exact copy of the source data."SILVER LAYER	[ Table name, key columns, EXACT business rule formula ]→ Your answer	"Data type casts:
+
+txn_timestamp → TIMESTAMP
+
+amount → DECIMAL(18,2)
+
+status → STRING with UPPER() normalization
+
+Filter conditions:
+
+Drop rows where:
+
+transaction_id IS NULL
+
+merchant_id IS NULL
+
+status NOT IN ('SUCCESS', 'FAILED')
+
+PENDING transactions are intentionally excluded because unresolved transactions must not skew failure-rate calculations.
+
+Deduplication strategy:
+
+Deduplication key: transaction_id
+
+For duplicate transaction IDs, retain the latest record based on _ingest_ts.
+
+Quality halt rule:
+
+Halt the pipeline if more than 5% of incoming rows are dropped due to invalid or null data.
+
+Raise an alert to the on-call engineer.
+
+Do NOT write partial or incomplete data to the Silver layer."GOLD LAYER	[ Table name, key columns, EXACT business rule formula ]→ Your answer	"Table name:merchant_risk_scores
+
+Key columns:
+
+merchant_id
+
+txn_date
+
+total_txns
+
+failed_txns
+
+failure_rate
+
+risk_flag
+
+confidence_level
+
+Exact formula:
+
+failure_rate =COUNT(status = 'FAILED') / COUNT(*)per merchant_id, DATE(txn_timestamp)
+
+risk_flag =CASEWHEN failure_rate > 0.30 THEN 'suspicious'ELSE 'normal'END
+
+confidence_level =CASEWHEN total_txns >= 100 THEN 'high'WHEN total_txns >= 20 and total_txns < 100 THEN 'medium'ELSE 'low'END
+
+Business rule:Merchants with fewer than 20 transactions still appear in the table but are tagged with confidence_level = 'low'. These records are not suppressed so the risk team can separately audit thin-volume merchants."ERROR HANDLING	[ What happens if source file missing? What if quality check fails? ]→ Your answer	"1. Source file missing
+
+Retry ingestion 3 times with a 15-minute backoff interval.
+
+If the file is still unavailable after 45 minutes:
+
+halt the pipeline
+
+page the on-call engineer
+
+skip the day's run
+
+Do NOT reuse the previous day's data, since stale risk scores are considered more dangerous than missing scores.
+
+Quality check failure
+
+If dropped-row rate exceeds 5%:
+
+halt processing at the Silver layer
+
+raise a P1 alert
+
+include row counts and sample bad records in the alert
+
+Do NOT promote data to Gold.
+
+The previous day's Gold table must remain intact and queryable.
+
+Partial write guard
+
+Write output to a staging table first.
+
+Promote to production only after validation succeeds.
+
+Perform an atomic rename/overwrite after sanity checks confirm:
+
+Gold row count > 0
+
+merchant count matches expected range within ±10%"PERFORMANCE	[ Partitioning strategy, any joins needing broadcast hint or caching ]→ Your answer	"1. Partitioning
+
+Silver and Gold tables are partitioned by txn_date.
+
+Daily pipeline runs process only the current partition.
+
+Full-table scans should be avoided.
+
+Broadcast hint
+
+If joining with the merchant metadata lookup table (<50 MB), use a BROADCAST JOIN on the lookup side.
+
+This minimizes shuffle operations and improves join performance.
+
+Aggregation cache
+
+The Silver → Gold aggregation step:GROUP BY merchant_id, txn_dateis considered the hot path in the pipeline.
+
+Cache the filtered Silver DataFrame in memory before aggregation if additional multi-pass logic is introduced (for example, rolling 7-day windows or repeated aggregations).
+
+Expected Gold table size
+
+Expected volume: ~10K–100K rows/day.
+
+One row represents one active merchant per day.
+
+Dataset size is small enough that data skew is not expected to be a concern."

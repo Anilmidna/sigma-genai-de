@@ -1,0 +1,51 @@
+{
+  "file": "queries/daily_failure_rate.sql",
+  "reviewed_at": "2026-05-25T16:11:53.077584",
+  "issues_found": 5,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Correlated subquery",
+        "line": "4",
+        "problem": "The correlated subquery runs for each row, which is inefficient and can be very slow at scale.",
+        "fix": "Use a JOIN to avoid the correlated subquery."
+      },
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Alias reference error",
+        "line": "9",
+        "problem": "The alias 'failed_count' cannot be referenced in the same SELECT clause where it is defined.",
+        "fix": "Calculate the failure rate in an outer query or a subquery."
+      },
+      {
+        "severity": "Medium",
+        "category": "Correctness",
+        "title": "Integer division",
+        "line": "9",
+        "problem": "Integer division will truncate the decimal part, leading to incorrect failure rates.",
+        "fix": "Use decimal division by casting one of the operands to DECIMAL."
+      },
+      {
+        "severity": "Low",
+        "category": "Performance",
+        "title": "Potentially missing index",
+        "line": "N/A",
+        "problem": "The query could benefit from indexes on transaction_date and status for faster filtering and grouping.",
+        "fix": "CREATE INDEX idx_fact_transactions_date_status ON fact_transactions(transaction_date, status);"
+      },
+      {
+        "severity": "Low",
+        "category": "Readability",
+        "title": "Lack of comments",
+        "line": "N/A",
+        "problem": "The query lacks comments explaining the logic, which can make it harder to understand for other developers.",
+        "fix": "Add comments to explain the purpose of the query and its logic."
+      }
+    ],
+    "corrected_sql": "WITH failed_transactions AS (\n  SELECT transaction_date, COUNT(*) AS failed_count\n  FROM fact_transactions\n  WHERE status = 'FAILED'\n  GROUP BY transaction_date\n),\ntotal_transactions AS (\n  SELECT transaction_date, COUNT(*) AS total_count\n  FROM fact_transactions\n  GROUP BY transaction_date\n)\nSELECT t.transaction_date,\n       f.failed_count,\n       t.total_count,\n       CAST(f.failed_count AS DECIMAL(10,2)) / t.total_count * 100 AS failure_rate\nFROM total_transactions t\nLEFT JOIN failed_transactions f ON t.transaction_date = f.transaction_date\nORDER BY t.transaction_date;",
+    "summary": "The query had several correctness issues, including a correlated subquery and integer division. It also lacked comments for readability and could benefit from performance optimizations."
+  }
+}

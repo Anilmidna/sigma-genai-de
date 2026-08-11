@@ -32,6 +32,7 @@ import boto3
 import json
 import os
 import re
+import time
 from datetime import datetime
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
@@ -39,7 +40,7 @@ from sample_data import SCHEMA_RICH, NL2SQL_QUESTIONS, SNOWFLAKE_CONFIG_TEMPLATE
 
 # ── CONFIGURATION ──────────────────────────────────────────
 bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
-MODEL_ID = 'amazon.nova-pro-v1:0'  # Pro for better SQL reasoning
+MODEL_ID = 'amazon.nova-lite-v1:0'  # Pro for better SQL reasoning
 
 # Schema context with business rules and few-shot examples
 SCHEMA_CONTEXT = SCHEMA_RICH
@@ -67,7 +68,7 @@ def extract_sql(response_text: str) -> str:
 
 def generate_sql(question: str) -> dict:
     """Send business question to Nova Pro with full schema context. Returns SQL."""
-    print(f"\n[Nova Pro] Generating SQL for: '{question}'")
+    print(f"\n[Nova Lite] Generating SQL for: '{question}'")
 
     system_prompt = f"""You are a senior Snowflake SQL expert for Sigma DataTech.
 Convert business questions into correct Snowflake SQL.
@@ -84,12 +85,14 @@ INSTRUCTIONS:
 3. Use uppercase for SQL keywords and table/column names.
 4. Always add meaningful column aliases."""
 
+    t0 = time.time()
     response = bedrock.converse(
         modelId=MODEL_ID,
         system=[{"text": system_prompt}],
         messages=[{"role": "user", "content": [{"text": f"Question: {question}"}]}],
         inferenceConfig={"temperature": 0.1, "maxTokens": 800},
     )
+    generation_time = time.time() - t0
 
     raw_text = response["output"]["message"]["content"][0]["text"]
     tokens_in = response["usage"]["inputTokens"]
@@ -105,9 +108,14 @@ INSTRUCTIONS:
     sql = extract_sql(raw_text)
     print(f"[Nova Pro] Explanation: {explanation}")
     print(f"[Nova Pro] SQL:\n{sql}")
-    print(f"[Nova Pro] Tokens: {tokens_in} in / {tokens_out} out")
+    print(f"[Nova Pro] Tokens: {tokens_in} in / {tokens_out} out | Generation: {generation_time:.2f}s")
 
-    return {"question": question, "sql": sql, "explanation": explanation}
+    return {
+        "question": question,
+        "sql": sql,
+        "explanation": explanation,
+        "generation_time": generation_time,
+    }
 
 
 # ══════════════════════════════════════════════════════════════
@@ -216,32 +224,57 @@ AUDIT_LOG = []
 def nl2sql(question: str) -> str:
     """
     Complete pipeline: Question → Generate SQL → Validate → Execute → Answer
+    Timing is measured per step and for the full end-to-end question.
     """
     print(f"\n{'=' * 60}")
     print(f"QUESTION: {question}")
     print(f"{'=' * 60}")
 
+    pipeline_start = time.time()
+
     # Step 1: Generate SQL
     gen = generate_sql(question)
     sql = gen["sql"]
+    t_generate = gen["generation_time"]
 
-    # Step 2: Validate
+    # Step 2: Validate (in-process — negligible, still tracked)
+    t_validate_start = time.time()
     is_valid, reason = validate_sql(sql)
-    print(f"[Validator] {reason}")
+    t_validate = time.time() - t_validate_start
+    print(f"[Validator] {reason} ({t_validate*1000:.1f}ms)")
     if not is_valid:
-        AUDIT_LOG.append({"question": question, "sql": sql, "status": "REJECTED", "reason": reason})
+        elapsed = time.time() - pipeline_start
+        AUDIT_LOG.append({
+            "timestamp": datetime.now().isoformat(),
+            "question": question,
+            "sql": sql,
+            "status": "REJECTED",
+            "reason": reason,
+            "elapsed_seconds": round(elapsed, 2),
+        })
         return f"Could not process: {reason}"
 
     # Step 3: Execute
+    t_exec_start = time.time()
     result = execute_sql(sql)
+    t_execute = time.time() - t_exec_start
     if result["error"]:
-        AUDIT_LOG.append({"question": question, "sql": sql, "status": "SQL_ERROR", "error": result["error"]})
+        elapsed = time.time() - pipeline_start
+        AUDIT_LOG.append({
+            "timestamp": datetime.now().isoformat(),
+            "question": question,
+            "sql": sql,
+            "status": "SQL_ERROR",
+            "error": result["error"],
+            "elapsed_seconds": round(elapsed, 2),
+        })
         return f"SQL execution failed: {result['error']}\nSQL was: {sql}"
 
     # Step 4: Format results
     formatted = format_results(result["columns"], result["rows"])
 
     # Step 5: Generate friendly answer
+    t_answer_start = time.time()
     answer_response = bedrock.converse(
         modelId=MODEL_ID,
         messages=[{"role": "user", "content": [{"text": (
@@ -253,15 +286,37 @@ def nl2sql(question: str) -> str:
         )}]}],
         inferenceConfig={"maxTokens": 300, "temperature": 0.3},
     )
+    t_answer = time.time() - t_answer_start
     answer = answer_response["output"]["message"]["content"][0]["text"]
 
-    # Step 6: Audit log
+    elapsed = time.time() - pipeline_start
+
+    # Step 6: Timing breakdown
+    print(f"\n{'─' * 60}")
+    print(f"⏱  TIMING BREAKDOWN")
+    print(f"{'─' * 60}")
+    print(f"   SQL Generation (Nova Lite):  {t_generate:.2f}s")
+    print(f"   Validation (in-process):     {t_validate*1000:.1f}ms")
+    print(f"   Snowflake Execution:         {t_execute:.2f}s")
+    print(f"   Answer Generation (Nova):    {t_answer:.2f}s")
+    print(f"   ─────────────────────────────────")
+    print(f"   Total (end-to-end):          {elapsed:.2f}s")
+    print(f"{'─' * 60}")
+
+    # Step 7: Audit log
     AUDIT_LOG.append({
         "timestamp": datetime.now().isoformat(),
         "question": question,
         "sql": sql,
         "row_count": result["row_count"],
         "status": "SUCCESS",
+        "elapsed_seconds": round(elapsed, 2),
+        "timing_breakdown": {
+            "sql_generation_s": round(t_generate, 2),
+            "validation_ms": round(t_validate * 1000, 1),
+            "snowflake_execution_s": round(t_execute, 2),
+            "answer_generation_s": round(t_answer, 2),
+        },
     })
 
     print(f"\nANSWER: {answer}")
@@ -301,10 +356,40 @@ if __name__ == "__main__":
     print("NL2SQL PIPELINE — RUNNING 5 TEST QUESTIONS")
     print("=" * 60)
 
-    nl2sql("DROP TABLE fact_transactions")
+    nl2sql("DROP TABLE fact_transactions")  # safety-check question (REJECTED)
 
     for q in NL2SQL_QUESTIONS:
         nl2sql(q)
+
+    # --- Timing summary table ---
+    print(f"\n\n{'=' * 60}")
+    print("NL2SQL — TIMING SUMMARY")
+    print(f"{'=' * 60}")
+    print(f"{'#':<3} {'Question':<44} {'Time':>7}  {'Status'}")
+    print("-" * 65)
+    question_num = 0
+    for entry in AUDIT_LOG:
+        status = entry.get("status", "?")
+        elapsed = entry.get("elapsed_seconds")
+        time_str = f"{elapsed:.1f}s" if elapsed is not None else "  n/a"
+        # Skip the injected security-test question in the numbering
+        if status == "REJECTED":
+            label = "[REJECTED]"
+        else:
+            question_num += 1
+            label = f"[{status}]"
+        print(
+            f"{str(question_num) if status != 'REJECTED' else '-':<3} "
+            f"{entry.get('question', '')[:43]:<44} "
+            f"{time_str:>7}  "
+            f"{label}"
+        )
+    successful = [e for e in AUDIT_LOG if e.get("status") == "SUCCESS"]
+    if successful:
+        times = [e["elapsed_seconds"] for e in successful]
+        print("-" * 65)
+        print(f"{'Avg (successful questions):':<50} {sum(times)/len(times):.1f}s")
+        print(f"{'Total wall-clock time:':<50} {sum(times):.1f}s")
 
     # --- Print audit log ---
     print(f"\n{'=' * 60}")
@@ -312,12 +397,15 @@ if __name__ == "__main__":
     print(f"{'=' * 60}")
     for entry in AUDIT_LOG:
         status = entry.get("status", "?")
-        print(f"[{status}] {entry.get('question', '')[:50]}")
+        elapsed = entry.get("elapsed_seconds")
+        time_str = f" ({elapsed:.2f}s)" if elapsed is not None else ""
+        print(f"[{status}]{time_str} {entry.get('question', '')[:50]}")
 
-    # --- Save audit log ---
+    # --- Save audit log (now includes timing fields) ---
     with open("nl2sql_audit.json", "w") as f:
         json.dump(AUDIT_LOG, f, indent=2)
     print(f"\nAudit log saved: nl2sql_audit.json ({len(AUDIT_LOG)} entries)")
+    print("Timing breakdown per question available in nl2sql_audit.json → timing_breakdown")
 
     # --- Context ablation experiments ---
     print("\n\n" + "=" * 60)

@@ -1,0 +1,6 @@
+{
+  "merchant_id": "M2187",
+  "risk_score": 74,
+  "txn_summary": "1842 txns, avg $8.40, 23 nulls",
+  "verdict": "**RISK LEVEL: HIGH**\n\nMerchant M2187 has processed 1842 transactions with an average amount of $8.40, of which 23 were null. The high risk score of 74 indicates potential anomalies and areas for further investigation. The transaction data shows a slight peak in afternoon activity, with most transactions clustering around the average amount. However, the presence of null transactions and a high frequency of small transactions warrants closer examination to mitigate potential risks.\n\nRECOMMENDED SQL FIX:\n```sql\nUPDATE silver_transactions SET quality_flag = 'FLAGGED' WHERE merchant_id = 'M2187';\n```\n\nThis query updates the `silver_transactions` table to set the `quality_flag` to 'FLAGGED' for all transactions associated with merchant ID 'M2187', indicating that these transactions should be reviewed due to potential anomalies."
+}

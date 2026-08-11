@@ -134,22 +134,49 @@ def investigate(function_name: str, hours_back: int, region: str) -> dict:
     except Exception as e:
         findings["kinesis_throttles"] = [{"error": str(e)}]
 
+    # ── Option A Extension: Detect Kinesis PutRecord throttles ───────────────
+    try:
+        resp = cw.get_metric_statistics(
+            Namespace="AWS/Kinesis",
+            MetricName="PutRecord.Throttled",
+            Dimensions=[{"Name": "StreamName", "Value": stream_name}],
+            StartTime=start, EndTime=now, Period=300,
+            Statistics=["Sum"],
+        )
+        findings["kinesis_put_throttles"] = []
+        for dp in sorted(resp.get("Datapoints", []), key=lambda x: x["Timestamp"]):
+            if dp["Sum"] > 0:
+                findings["kinesis_put_throttles"].append({
+                    "timestamp": dp["Timestamp"].isoformat(),
+                    "throttle_count": int(dp["Sum"]),
+                })
+    except Exception as e:
+        findings["kinesis_put_throttles"] = [{"error": str(e)}]
+
     # ── Synthesise: find the anomaly window ───────────────────────────────────
-    # Look for the timestamp where Lambda version changed AND errors appeared
-    version_change_ts = None
+    # Look for the timestamp where the current LIVE Lambda version was modified
+    live_version = None
     for item in findings["lambda_version_history"]:
-        if "last_modified" in item and item.get("version") == "2":
-            version_change_ts = item["last_modified"]
+        if item.get("alias") == "LIVE":
+            live_version = item.get("function_version")
+            break
+
+    version_change_ts = None
+    if live_version and live_version != "1":
+        for item in findings["lambda_version_history"]:
+            if item.get("version") == live_version:
+                version_change_ts = item.get("last_modified")
+                break
 
     if version_change_ts:
         findings["anomaly_window"] = {
             "detected_at": version_change_ts,
-            "trigger":     "Lambda version 2 deployed",
-            "correlation": "Lambda v2 deployed → malformed JSON → Firehose delivered → Snowflake loaded 0 rows",
+            "trigger":     f"Lambda version {live_version} deployed",
+            "correlation": f"Lambda v{live_version} deployed → malformed JSON → Firehose delivered → Snowflake loaded 0 rows",
         }
         findings["root_cause_hypothesis"] = (
-            f"Lambda function '{function_name}' was updated to version 2 "
-            f"at {version_change_ts}. Version 2 likely changed the JSON field names "
+            f"Lambda function '{function_name}' was updated to version {live_version} "
+            f"at {version_change_ts}. Version {live_version} likely changed the JSON field names "
             f"or date format, causing Snowflake COPY INTO to reject all records silently."
         )
 

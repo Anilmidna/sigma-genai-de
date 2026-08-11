@@ -1,5 +1,5 @@
 # These checks act as the "Data Contract" for our pipeline
-checks for day1_orders:
+checks for day2_orders:
   # 1. We must have data
   - row_count > 0
   

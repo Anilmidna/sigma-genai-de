@@ -1,0 +1,17 @@
+[
+  {
+    "merchant_id": "M003",
+    "reason": "\"Transaction count >= 1 and average transaction amount < 15\"\n\nThought",
+    "flagged_at": "2026-05-29T08:55:41.174585Z"
+  },
+  {
+    "merchant_id": "M003",
+    "reason": "\"Transaction count >= 1 and average transaction amount < 15\"\n\nThought",
+    "flagged_at": "2026-05-29T08:56:04.955266Z"
+  },
+  {
+    "merchant_id": "M003",
+    "reason": "\"Transaction count >= 1 and average transaction amount < 15\"\n\nThought",
+    "flagged_at": "2026-05-29T08:56:34.111356Z"
+  }
+]

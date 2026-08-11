@@ -34,8 +34,8 @@ desktop.ini
 ~$*
 
 # Student lab outputs — never commit trainer runs
-agent_outputs/
-output/
+# agent_outputs/
+# output/
 
 # Temporary
 *.tmp

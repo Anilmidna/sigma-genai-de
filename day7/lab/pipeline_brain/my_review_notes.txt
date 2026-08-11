@@ -1,0 +1,7 @@
+I fixed the warnings and failures reported by the code review script:
+1. ERROR_HANDLING (FAIL):
+Added a `try/except` block inside the `main()` function to wrap the pipeline execution calls (`ingest_bronze` and `transform_silver`). Any exceptions are caught and raised after printing an error message.
+2. SCHEMA_VALIDATION (WARN):
+Added checks using `df.columns` before performing transformations in `transform_silver()` to ensure the required columns are present in both `transactions_df` and `merchants_df`.
+3. ROW_COUNT_LOGGING (WARN):
+Added a `.count()` call inside a print statement right after writing the `transactions_enriched_df` to the output path in `transform_silver()`.

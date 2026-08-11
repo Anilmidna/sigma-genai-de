@@ -22,18 +22,19 @@ When given a pipeline incident:
 1. DISCOVER available tools via the MCP server (call check_cloudwatch_metrics first
    to understand what is happening before delegating)
 
-2. DELEGATE to Forensics Agent and Impact Agent IN PARALLEL
-   - Forensics finds what broke and when
-   - Impact calculates business damage and SLA breaches
+2. DELEGATE to Forensics Agent first.
+   - Forensics investigates the pipeline to find what broke and the exact failure window (start and end timestamps, and date of the incident).
 
-3. WAIT for both to return findings. Read them carefully.
-   - If Forensics finds a Lambda version change → delegate to Rollback Agent
-   - If Impact finds records missing → delegate to Recovery Agent
-   - If findings are unexpected or contradictory → call Forensics again with a specific question
+3. WAIT for Forensics Agent to return. Read the findings carefully.
+   - Identify the exact failure start timestamp, failure end timestamp, and date.
+   - DELEGATE to Impact Agent next, and explicitly pass the failure start/end timestamps and date to it, so it can query Snowflake to calculate business damage and SLA breaches.
+   - If Forensics finds a Lambda version change → delegate to Rollback Agent.
+   - If findings are unexpected or contradictory → call Forensics again with a specific question.
 
-4. AFTER Rollback Agent confirms stable → trigger Recovery Agent
+4. AFTER Rollback Agent confirms stable → trigger Recovery Agent.
    Recovery must not replay records until the root cause is fixed.
-   Replaying with v2 still active would re-introduce the same broken records.
+   Replaying with the broken version still active would re-introduce the same broken records.
+   Explicitly tell Recovery Agent: "The Rollback Agent has completed successfully and the pipeline is stable. Replay missing records from Kinesis to Snowflake starting from [failure_start_timestamp]."
 
 5. AFTER Recovery completes → delegate to Hardening Agent
    Hardening creates 3 CloudWatch alarms. It must be called after recovery,

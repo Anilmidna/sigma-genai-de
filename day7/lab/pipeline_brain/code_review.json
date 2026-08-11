@@ -4,99 +4,107 @@
       "id": 1,
       "name": "IDEMPOTENCY",
       "status": "PASS",
-      "finding": "All write operations use overwrite mode.",
-      "fix": "None required."
+      "evidence": "No violation found",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 2,
       "name": "ERROR_HANDLING",
-      "status": "FAIL",
-      "finding": "No try/except blocks around pipeline stages.",
-      "fix": "Wrap each pipeline stage in try/except blocks."
+      "status": "PASS",
+      "evidence": "try:\n        # Ingest Bronze layer\n        ingest_bronze(spark, input_path, output_path, run_date, run_id)\n\n        # Transform Silver layer\n        transform_silver(spark, output_path, output_path, output_path, run_date)\n\n        # Write run metadata summary to a JSON file\n        metadata = {\"run_date\": run_date, \"run_id\": run_id, \"status\": \"COMPLETE\"}\n        with open(os.path.join(output_path, \"run_metadata.json\"), \"w\") as f:\n            json.dump(metadata, f)\n    except Exception as e:\n        print(f\"Pipeline execution failed: {e}\")\n        raise",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 3,
       "name": "PARTITION_PRUNING",
       "status": "PASS",
-      "finding": "Read operations are filtered by date/partition column.",
-      "fix": "None required."
+      "evidence": "transactions_df = (spark.read.parquet(bronze_path + \"/bronze/transactions\")\n                     .where(col(\"ingestion_timestamp\") == run_date))\n\n    merchants_df = (spark.read.parquet(merchants_path + \"/bronze/merchants\")\n                   .where(col(\"ingestion_timestamp\") == run_date)\n                  .cache())",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 4,
       "name": "ROW_COUNT_LOGGING",
-      "status": "WARN",
-      "finding": "No row count logging after transformation stages.",
-      "fix": "Add logging for row counts after each transformation stage."
+      "status": "PASS",
+      "evidence": "print(f\"Transformed and wrote {transactions_enriched_df.count()} records to Silver layer.\")",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 5,
       "name": "BUSINESS_RULES",
       "status": "PASS",
-      "finding": "Revenue is calculated as SUM(amount) WHERE status='COMPLETED'.",
-      "fix": "None required."
+      "evidence": "merchant_performance_df = completed_txns.groupBy(\"merchant_id\", \"merchant_name\", \"category\", \"city\", \"date\") \\\n        .agg(\n             sum(\"amount\").alias(\"total_revenue\"),\n             count(\"*\").alias(\"txn_count\")\n         )\n\n    daily_summary_df = silver_df.groupBy(\"date\") \\\n       .agg(\n             sum(when(col(\"status\") == \"COMPLETED\", col(\"amount\")).otherwise(lit(0))).alias(\"total_revenue\"),\n             count(\"*\").alias(\"total_txns\"),\n             count(col(\"customer_id\").distinct()).alias(\"unique_customers\"),\n             count(col(\"merchant_id\").distinct()).alias(\"unique_merchants\")\n         )",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 6,
       "name": "NULL_HANDLING",
-      "status": "WARN",
-      "finding": "No NULL checks on primary key and critical columns.",
-      "fix": "Add NULL checks on primary key and critical columns."
+      "status": "PASS",
+      "evidence": "transactions_df = transactions_df.filter((col(\"transaction_id\").isNotNull()) & (col(\"amount\") >= 0))",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 7,
       "name": "BROADCAST_HINT",
-      "status": "WARN",
-      "finding": "broadcast() is not used on the merchant dimension join.",
-      "fix": "Use broadcast() on the merchant dimension join."
+      "status": "PASS",
+      "evidence": "transactions_enriched_df = (transactions_dedup_df.join(broadcast(merchants_df), \"merchant_id\", \"left_outer\")\n                               .withColumn(\"quality_flag\", when(col(\"merchant_id\").isNull(), \"UNMATCHED\").otherwise(\"CLEAN\")))",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 8,
       "name": "HARDCODED_PATHS",
-      "status": "FAIL",
-      "finding": "File paths are hardcoded as strings.",
-      "fix": "Use parameters instead of hardcoded file paths."
+      "status": "PASS",
+      "evidence": "input_path = os.environ.get(\"INPUT_PATH\")\n    output_path = os.environ.get(\"OUTPUT_PATH\")",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 9,
       "name": "SCHEMA_VALIDATION",
-      "status": "WARN",
-      "finding": "No schema validation before transforming.",
-      "fix": "Add schema validation to check expected columns."
+      "status": "PASS",
+      "evidence": "required_txn_cols = {\"transaction_id\", \"merchant_id\", \"amount\", \"transaction_date\"}\n    if not required_txn_cols.issubset(set(transactions_df.columns)):\n        raise ValueError(f\"Missing required columns in transactions data: {required_txn_cols - set(transactions_df.columns)}\")\n\n    required_merchant_cols = {\"merchant_id\", \"merchant_name\", \"category\", \"city\"}\n    if not required_merchant_cols.issubset(set(merchants_df.columns)):\n        raise ValueError(f\"Missing required columns in merchants data: {required_merchant_cols - set(merchants_df.columns)}\")",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 10,
       "name": "DEDUPLICATION",
       "status": "PASS",
-      "finding": "Explicit dedup logic on transaction_id is present.",
-      "fix": "None required."
+      "evidence": "transactions_dedup_df = (transactions_df.groupBy(\"transaction_id\")\n                             .agg({\"amount\": \"max\", \"ingestion_timestamp\": \"max\"})\n                            .withColumnsRenamed({\"max(amount)\": \"amount\", \"max(ingestion_timestamp)\": \"ingestion_timestamp\"}))",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 11,
       "name": "METADATA_OUTPUT",
       "status": "PASS",
-      "finding": "Pipeline writes a run summary JSON at the end.",
-      "fix": "None required."
+      "evidence": "with open(os.path.join(output_path, \"run_metadata.json\"), \"w\") as f:\n            json.dump(metadata, f)\n\n    with open(f\"{gold_output_dir}/run_metadata.json\", \"w\") as f:\n        json.dump(run_metadata, f)",
+      "finding": "",
+      "fix": ""
     },
     {
       "id": 12,
       "name": "IMPORTS",
       "status": "PASS",
-      "finding": "All imports are present and specific.",
-      "fix": "None required."
+      "evidence": "No violation found",
+      "finding": "",
+      "fix": ""
     }
   ],
   "summary": {
-    "pass_count": 6,
-    "fail_count": 2,
-    "warn_count": 4,
-    "merge_recommendation": "APPROVE_WITH_CHANGES",
-    "top_3_fixes": [
-      "Wrap each pipeline stage in try/except blocks.",
-      "Add logging for row counts after each transformation stage.",
-      "Use parameters instead of hardcoded file paths."
-    ]
+    "pass_count": 12,
+    "fail_count": 0,
+    "warn_count": 0,
+    "merge_recommendation": "APPROVE",
+    "top_3_fixes": []
   },
-  "reviewed_file": "pipeline_brain\\generated_pipeline.py",
-  "reviewed_at": "2026-05-26T11:10:54.020507+00:00",
+  "reviewed_file": "pipeline_brain/generated_pipeline.py",
+  "reviewed_at": "2026-05-26T11:56:59.992550+00:00",
   "model": "amazon.nova-pro-v1:0"
 }

@@ -7,8 +7,8 @@
   "has_failure_callback": true,
   "has_sla": true,
   "tokens_in": 1259,
-  "tokens_out": 682,
-  "output_file": "pipeline_brain\\sigma_dag.py",
-  "output_bytes": 2504,
-  "generated_at": "2026-05-26T09:46:56.364889+00:00"
+  "tokens_out": 798,
+  "output_file": "pipeline_brain/sigma_dag.py",
+  "output_bytes": 2747,
+  "generated_at": "2026-05-26T09:23:30.829730+00:00"
 }

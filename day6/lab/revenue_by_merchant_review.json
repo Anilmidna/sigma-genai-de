@@ -1,0 +1,43 @@
+{
+  "file": "queries/revenue_by_merchant.sql",
+  "reviewed_at": "2026-05-25T16:12:14.867465",
+  "issues_found": 4,
+  "review": {
+    "issues": [
+      {
+        "severity": "Critical",
+        "category": "Correctness",
+        "title": "Missing COMPLETED status filter",
+        "line": "WHERE t.merchant_id = m.merchant_id",
+        "problem": "The query includes all transaction statuses in the revenue calculation, not just 'COMPLETED'.",
+        "fix": "WHERE t.merchant_id = m.merchant_id AND t.status = 'COMPLETED'"
+      },
+      {
+        "severity": "High",
+        "category": "Performance",
+        "title": "Implicit JOIN syntax",
+        "line": "FROM fact_transactions t, dim_merchant m",
+        "problem": "Using implicit JOIN syntax can lead to less readable and maintainable code, and can sometimes cause performance issues.",
+        "fix": "FROM fact_transactions t JOIN dim_merchant m ON t.merchant_id = m.merchant_id"
+      },
+      {
+        "severity": "Medium",
+        "category": "Readability",
+        "title": "Lack of comments",
+        "line": "Entire query",
+        "problem": "The query lacks comments explaining its purpose and logic, which can make it harder for others to understand.",
+        "fix": "Add comments at the top of the query explaining its purpose and logic."
+      },
+      {
+        "severity": "Medium",
+        "category": "Readability",
+        "title": "ORDER BY direction",
+        "line": "ORDER BY total_revenue",
+        "problem": "The revenue is ordered in ascending order, but typically the top merchants by revenue would be ordered in descending order.",
+        "fix": "ORDER BY total_revenue DESC"
+      }
+    ],
+    "corrected_sql": "-- revenue_by_merchant.sql\n-- Calculates the total revenue and transaction count for each merchant,\n-- only including transactions with a status of 'COMPLETED'.\n\nSELECT m.merchant_name,\n       SUM(t.amount) as total_revenue,\n       COUNT(*) as txn_count\nFROM fact_transactions t\nJOIN dim_merchant m ON t.merchant_id = m.merchant_id\nWHERE t.merchant_id = m.merchant_id\nAND t.status = 'COMPLETED'\nAND t.transaction_date > '2024-01-01'\nGROUP BY m.merchant_name\nORDER BY total_revenue DESC\nLIMIT 10;",
+    "summary": "The query had issues with missing filters, implicit JOIN syntax, readability, and ORDER BY direction. Corrected and improved for better performance and readability."
+  }
+}

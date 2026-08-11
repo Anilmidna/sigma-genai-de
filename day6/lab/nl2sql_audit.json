@@ -1,43 +1,80 @@
 [
   {
+    "timestamp": "2026-05-25T15:38:11.128052",
     "question": "DROP TABLE fact_transactions",
-    "sql": "DROP TABLE FACT_TRANSACTIONS;",
+    "sql": "DROP TABLE IF EXISTS SIGMA_DE.PUBLIC.FACT_TRANSACTIONS;",
     "status": "REJECTED",
-    "reason": "Rejected: must start with SELECT, got: DROP TABLE FACT_TRANSACTIONS;"
+    "reason": "Rejected: must start with SELECT, got: DROP TABLE IF EXISTS SIGMA_DE.",
+    "elapsed_seconds": 9.23
   },
   {
-    "timestamp": "2026-05-25T12:42:11.994595",
+    "timestamp": "2026-05-25T15:38:15.829657",
     "question": "How many transactions do we have in total?",
     "sql": "SELECT COUNT(*) AS TOTAL_TRANSACTIONS\nFROM FACT_TRANSACTIONS;",
     "row_count": 1,
-    "status": "SUCCESS"
+    "status": "SUCCESS",
+    "elapsed_seconds": 4.7,
+    "timing_breakdown": {
+      "sql_generation_s": 1.22,
+      "validation_ms": 0.7,
+      "snowflake_execution_s": 2.57,
+      "answer_generation_s": 0.92
+    }
   },
   {
-    "timestamp": "2026-05-25T12:42:22.793918",
+    "timestamp": "2026-05-25T15:38:20.305167",
     "question": "How many transactions failed?",
-    "sql": "SELECT COUNT(*) AS FAILED_COUNT \nFROM FACT_TRANSACTIONS \nWHERE STATUS = 'FAILED';",
+    "sql": "SELECT COUNT(*) AS FAILED_COUNT\nFROM FACT_TRANSACTIONS\nWHERE STATUS = 'FAILED';",
     "row_count": 1,
-    "status": "SUCCESS"
+    "status": "SUCCESS",
+    "elapsed_seconds": 4.47,
+    "timing_breakdown": {
+      "sql_generation_s": 1.12,
+      "validation_ms": 0.1,
+      "snowflake_execution_s": 2.48,
+      "answer_generation_s": 0.88
+    }
   },
   {
-    "timestamp": "2026-05-25T12:42:26.895206",
+    "timestamp": "2026-05-25T15:38:26.630472",
     "question": "Which merchant had the highest revenue?",
-    "sql": "SELECT M.MERCHANT_NAME,\n       SUM(CASE WHEN T.STATUS='COMPLETED' THEN T.AMOUNT ELSE 0 END) AS REVENUE_USD\nFROM FACT_TRANSACTIONS T\nJOIN DIM_MERCHANT M ON T.MERCHANT_ID = M.MERCHANT_ID\nGROUP BY M.MERCHANT_NAME\nORDER BY REVENUE_USD DESC\nLIMIT 1;",
+    "sql": "SELECT M.MERCHANT_NAME,\n       SUM(CASE WHEN T.STATUS = 'COMPLETED' THEN T.AMOUNT ELSE 0 END) AS REVENUE_USD\nFROM FACT_TRANSACTIONS T\nJOIN DIM_MERCHANT M ON T.MERCHANT_ID = M.MERCHANT_ID\nWHERE T.TRANSACTION_DATE BETWEEN '2024-01-15' AND '2024-01-31'\nGROUP BY M.MERCHANT_NAME\nORDER BY REVENUE_USD DESC\nLIMIT 1;",
     "row_count": 1,
-    "status": "SUCCESS"
+    "status": "SUCCESS",
+    "elapsed_seconds": 6.32,
+    "timing_breakdown": {
+      "sql_generation_s": 2.65,
+      "validation_ms": 0.2,
+      "snowflake_execution_s": 2.4,
+      "answer_generation_s": 1.28
+    }
   },
   {
-    "timestamp": "2026-05-25T12:42:31.635585",
+    "timestamp": "2026-05-25T15:38:32.268900",
     "question": "What is the failure rate for each payment method?",
     "sql": "SELECT PAYMENT_METHOD,\n       COUNT(*) AS TOTAL_TRANSACTIONS,\n       SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) AS FAILED_TRANSACTIONS,\n       ROUND(100.0 * SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END) / COUNT(*), 2) AS FAILURE_RATE_PCT\nFROM FACT_TRANSACTIONS\nGROUP BY PAYMENT_METHOD\nORDER BY FAILURE_RATE_PCT DESC;",
     "row_count": 3,
-    "status": "SUCCESS"
+    "status": "SUCCESS",
+    "elapsed_seconds": 5.64,
+    "timing_breakdown": {
+      "sql_generation_s": 2.24,
+      "validation_ms": 0.2,
+      "snowflake_execution_s": 2.08,
+      "answer_generation_s": 1.31
+    }
   },
   {
-    "timestamp": "2026-05-25T12:42:39.130339",
+    "timestamp": "2026-05-25T15:38:36.816527",
     "question": "What was the total revenue generated across all merchants?",
-    "sql": "SELECT SUM(AMOUNT) AS TOTAL_REVENUE_USD\nFROM FACT_TRANSACTIONS\nWHERE STATUS = 'COMPLETED';",
+    "sql": "SELECT SUM(CASE WHEN STATUS='COMPLETED' THEN AMOUNT ELSE 0 END) AS TOTAL_REVENUE_USD\nFROM FACT_TRANSACTIONS;",
     "row_count": 1,
-    "status": "SUCCESS"
+    "status": "SUCCESS",
+    "elapsed_seconds": 4.55,
+    "timing_breakdown": {
+      "sql_generation_s": 1.19,
+      "validation_ms": 0.0,
+      "snowflake_execution_s": 2.35,
+      "answer_generation_s": 1.01
+    }
   }
 ]

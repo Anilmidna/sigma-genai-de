@@ -3,7 +3,7 @@ import urllib.request
 import sys
 import os
 
-URL_BASE = "http://localhost:8585/api/v1"
+URL_BASE = "https://sandbox.open-metadata.org/my-data"
 
 def check_endpoint(endpoint):
     try:
@@ -22,13 +22,13 @@ def main():
     # 1. Check server status
     server_up = False
     try:
-        urllib.request.urlopen("http://localhost:8585", timeout=5)
+        urllib.request.urlopen("https://sandbox.open-metadata.org/my-data", timeout=5)
         server_up = True
     except Exception:
         pass
         
     if not server_up:
-        print("❌ Error: OpenMetadata is not running on http://localhost:8585.")
+        print("❌ Error: OpenMetadata is not running on https://sandbox.open-metadata.org/my-data.")
         print("   Make sure you have started the local Docker sandbox (docker compose up -d) and the server is fully initialized (takes 1-2 mins).")
         sys.exit(1)
         

@@ -690,7 +690,7 @@ def print_scorecard(checks: list) -> int:
         print(f"\n  {yellow(bold('CONDITIONAL SHIP'))}  Fix the red items above before merging.")
     else:
         verdict = "DOESN'T SHIP"
-        print(f"\n  {red(bold('DOESN\'T SHIP ✗'))}  Too many failures. This PR is not ready.")
+        print(f"\n  {red(bold('DOES NOT SHIP ✗'))}  Too many failures. This PR is not ready.")
 
     print("=" * 68)
     return score, verdict

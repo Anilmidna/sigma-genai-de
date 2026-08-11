@@ -67,7 +67,7 @@ For each issue found, return this EXACT JSON structure:
   "summary": "1-2 sentence overall assessment"
 }
 
-Return ONLY valid JSON. No markdown fences. No text before or after the JSON."""
+Return ONLY valid JSON. No markdown fences. No text ftebefore or after the JSON."""
 
 
 def review_sql(sql_query: str) -> dict:

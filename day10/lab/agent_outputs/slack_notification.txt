@@ -1,0 +1,6 @@
+*SIGMA DATATECH DATA QUALITY ALERT*
+*Date:*    <today>
+*Status:*  CRITICAL
+*Issues:*  3 total — 1 critical, 2 high
+*Top fix:* Validate "Fix Outlier amounts" logic.
+*Next review:* <tomorrow's date>

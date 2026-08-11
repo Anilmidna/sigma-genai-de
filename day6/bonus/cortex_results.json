@@ -1,0 +1,47 @@
+[
+  {
+    "question_num": 1,
+    "question": "How many transactions do we have in total?",
+    "sql_generated": "SELECT COUNT(*) AS total_transactions\nFROM FACT_TRANSACTIONS;",
+    "answer": null,
+    "row_count": 1,
+    "elapsed_seconds": 12.154186964035034,
+    "error": null
+  },
+  {
+    "question_num": 2,
+    "question": "How many transactions failed?",
+    "sql_generated": "SELECT COUNT(*)\nFROM FACT_TRANSACTIONS\nWHERE STATUS = 'FAILED';",
+    "answer": null,
+    "row_count": 1,
+    "elapsed_seconds": 32.785109996795654,
+    "error": null
+  },
+  {
+    "question_num": 3,
+    "question": "Which merchant had the highest revenue?",
+    "sql_generated": "SELECT\n    MERCHANT_NAME,\n    SUM(AMOUNT) AS REVENUE\nFROM\n    FACT_TRANSACTIONS\nJOIN\n    DIM_MERCHANT ON FACT_TRANSACTIONS.MERCHANT_ID = DIM_MERCHANT.MERCHANT_ID\nWHERE\n    STATUS = 'COMPLETED'\nGROUP BY\n    MERCHANT_NAME\nORDER BY\n    REVENUE DESC\nLIMIT 1;",
+    "answer": null,
+    "row_count": 1,
+    "elapsed_seconds": 19.979840993881226,
+    "error": null
+  },
+  {
+    "question_num": 4,
+    "question": "What is the failure rate for each payment method?",
+    "sql_generated": "SELECT\n    PAYMENT_METHOD,\n    (SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) AS FAILURE_RATE\nFROM\n    FACT_TRANSACTIONS\nGROUP BY\n    PAYMENT_METHOD;",
+    "answer": null,
+    "row_count": 3,
+    "elapsed_seconds": 122.33277988433838,
+    "error": null
+  },
+  {
+    "question_num": 5,
+    "question": "What was the total revenue generated across all merchants?",
+    "sql_generated": "SELECT SUM(AMOUNT) AS TOTAL_REVENUE\nFROM FACT_TRANSACTIONS\nWHERE STATUS = 'COMPLETED';",
+    "answer": null,
+    "row_count": 1,
+    "elapsed_seconds": 470.6456129550934,
+    "error": null
+  }
+]

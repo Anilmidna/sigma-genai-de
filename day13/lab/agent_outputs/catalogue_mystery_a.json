@@ -1,0 +1,933 @@
+{
+  "mystery_folder": "mystery_a",
+  "industry_analysis": {
+    "industry": "Human Resources",
+    "what_they_do": "This company manages employee data and payroll for its workforce. It also handles performance reviews and compensation details.",
+    "top_clues": [
+      "emp_id, emp_code, department_id, designation_id, employment_type, work_location, joining_date, is_active",
+      "gross_earnings, net_take_home, tds_deducted, pf_deducted, performance_bonus, payment_status, payment_date",
+      "review_id, emp_id, review_cycle, reviewer_emp_id, self_rating, manager_rating, final_rating, promotion_recommended"
+    ],
+    "confidence": "HIGH"
+  },
+  "generated_at": "2026-06-03T06:24:38.948156+00:00",
+  "tables": {
+    "dim_people": {
+      "source_tables": [
+        "stg_workforce",
+        "stg_performance"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "emp_id",
+          "source_table": "stg_workforce",
+          "source_column": "emp_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "emp_code",
+          "source_table": "stg_workforce",
+          "source_column": "emp_code",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "department_id",
+          "source_table": "stg_workforce",
+          "source_column": "department_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "designation_id",
+          "source_table": "stg_workforce",
+          "source_column": "designation_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "grade_band",
+          "source_table": "stg_workforce",
+          "source_column": "grade_band",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "employment_type",
+          "source_table": "stg_workforce",
+          "source_column": "employment_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "work_location",
+          "source_table": "stg_workforce",
+          "source_column": "work_location",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "joining_date",
+          "source_table": "stg_workforce",
+          "source_column": "joining_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "is_active",
+          "source_table": "stg_workforce",
+          "source_column": "is_active",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "age_band",
+          "source_table": "stg_workforce",
+          "source_column": "date_of_birth",
+          "transformation": "DATEDIFF('year', w.date_of_birth, CURRENT_DATE())"
+        },
+        {
+          "target_column": "tenure_days",
+          "source_table": "stg_workforce",
+          "source_column": "joining_date",
+          "transformation": "DATEDIFF('day', w.joining_date, CURRENT_DATE())"
+        },
+        {
+          "target_column": "latest_rating",
+          "source_table": "stg_performance",
+          "source_column": "final_rating",
+          "transformation": "COALESCE(perf.final_rating, 'NOT_REVIEWED')"
+        },
+        {
+          "target_column": "promotion_flag",
+          "source_table": "stg_performance",
+          "source_column": "promotion_recommended",
+          "transformation": "COALESCE(perf.promotion_recommended, FALSE)"
+        },
+        {
+          "target_column": "email_hash",
+          "source_table": "stg_workforce",
+          "source_column": "personal_email",
+          "transformation": "SHA2(w.personal_email, 256)"
+        },
+        {
+          "target_column": "pan_hash",
+          "source_table": "stg_workforce",
+          "source_column": "pan_number",
+          "transformation": "SHA2(w.pan_number, 256)"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "stg_workforce",
+          "source_column": "_loaded_at",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "personal_email",
+          "pii_type": "EMAIL",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to personal email could lead to phishing attacks and identity theft."
+        },
+        {
+          "column": "pan_number",
+          "pii_type": "GOV_ID",
+          "severity": "CRITICAL",
+          "real_world_risk": "Exposure of PAN number could lead to severe financial fraud and identity theft."
+        },
+        {
+          "column": "date_of_birth",
+          "pii_type": "BIOMETRIC",
+          "severity": "MEDIUM",
+          "real_world_risk": "Exposure of date of birth could be used in identity theft and social engineering attacks."
+        },
+        {
+          "column": "email_hash",
+          "pii_type": "EMAIL",
+          "severity": "MEDIUM",
+          "real_world_risk": "Although hashed, if the hashing algorithm is compromised, it could still lead to privacy breaches."
+        },
+        {
+          "column": "pan_hash",
+          "pii_type": "GOV_ID",
+          "severity": "MEDIUM",
+          "real_world_risk": "If the hashing algorithm is compromised, it could still lead to privacy breaches."
+        }
+      ],
+      "business_description": "This table provides a de-identified view of employee data, including demographic and performance metrics, for analytics purposes. It excludes raw PII data and requires access to the stg_workforce table.",
+      "who_should_access": "Analytics and HR teams",
+      "who_should_NOT_access": "General business users and external parties",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that access to raw PII data is strictly controlled and that hashing algorithms are regularly reviewed for security.",
+      "model_name": "dim_people",
+      "sql_lines": 29,
+      "analysed_at": "2026-06-03T06:24:44.623051+00:00"
+    },
+    "fct_payroll_ledger": {
+      "source_tables": [
+        "stg_monthly_payroll",
+        "stg_workforce",
+        "stg_compensation"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "payroll_id",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "payroll_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payroll_month",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "payroll_month",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "emp_id",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "emp_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "department_id",
+          "source_table": "stg_workforce",
+          "source_column": "department_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "work_location",
+          "source_table": "stg_workforce",
+          "source_column": "work_location",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "employment_type",
+          "source_table": "stg_workforce",
+          "source_column": "employment_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "grade_band",
+          "source_table": "stg_compensation",
+          "source_column": "grade_band",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gross_earnings",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "gross_earnings",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "net_take_home",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "net_take_home",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "tds_deducted",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "tds_deducted",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "pf_deducted",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "pf_deducted",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "performance_bonus",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "performance_bonus",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payment_status",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "payment_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payment_date",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "payment_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "stg_monthly_payroll",
+          "source_column": "_loaded_at",
+          "transformation": "direct"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "emp_id",
+          "pii_type": "GOV_ID",
+          "severity": "CRITICAL",
+          "real_world_risk": "Leakage of employee IDs could lead to identity theft and unauthorized access to personal and financial information."
+        },
+        {
+          "column": "work_location",
+          "pii_type": "LOCATION",
+          "severity": "MEDIUM",
+          "real_world_risk": "Disclosure of work locations could lead to privacy breaches and potential security risks."
+        }
+      ],
+      "business_description": "This table consolidates payroll data from multiple sources to provide a comprehensive view of employee earnings, deductions, and payment status. It integrates data from monthly payroll records, workforce details, and compensation information to support payroll processing and financial reporting.",
+      "who_should_access": "Finance and HR teams",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is tightly controlled and monitored due to the presence of sensitive employee information.",
+      "model_name": "fct_payroll_ledger",
+      "sql_lines": 25,
+      "analysed_at": "2026-06-03T06:24:48.913660+00:00"
+    },
+    "int_headcount": {
+      "source_tables": [
+        "stg_workforce"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "department_id",
+          "source_table": "stg_workforce",
+          "source_column": "department_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "work_location",
+          "source_table": "stg_workforce",
+          "source_column": "work_location",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "employment_type",
+          "source_table": "stg_workforce",
+          "source_column": "employment_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "grade_band",
+          "source_table": "stg_workforce",
+          "source_column": "grade_band",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "headcount",
+          "source_table": "stg_workforce",
+          "source_column": "emp_id",
+          "transformation": "COUNT(emp_id)"
+        },
+        {
+          "target_column": "active_count",
+          "source_table": "stg_workforce",
+          "source_column": "is_active",
+          "transformation": "COUNT(CASE WHEN is_active THEN 1 END)"
+        },
+        {
+          "target_column": "avg_tenure_days",
+          "source_table": "stg_workforce",
+          "source_column": "joining_date",
+          "transformation": "AVG(DATEDIFF('day', joining_date, CURRENT_DATE()))"
+        },
+        {
+          "target_column": "contractor_count",
+          "source_table": "stg_workforce",
+          "source_column": "employment_type",
+          "transformation": "COUNT(CASE WHEN employment_type = 'CONTRACT' THEN 1 END)"
+        }
+      ],
+      "pii_columns": [],
+      "business_description": "This table provides an aggregated view of the headcount within different departments, categorized by work location, employment type, and grade band. It includes metrics such as total headcount, active employee count, average tenure, and the number of contractors.",
+      "who_should_access": "HR, Management, Analytics",
+      "who_should_NOT_access": "Sales, Marketing",
+      "sensitivity_level": "INTERNAL",
+      "governance_flag": "Ensure that access to this table is restricted to authorized personnel only, as it contains sensitive employee data.",
+      "model_name": "int_headcount",
+      "sql_lines": 13,
+      "analysed_at": "2026-06-03T06:24:51.776103+00:00"
+    },
+    "stg_compensation": {
+      "source_tables": [
+        "raw.compensation"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "emp_id",
+          "source_table": "raw.compensation",
+          "source_column": "emp_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "effective_date",
+          "source_table": "raw.compensation",
+          "source_column": "effective_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "basic_ctc",
+          "source_table": "raw.compensation",
+          "source_column": "basic_ctc",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "hra_amount",
+          "source_table": "raw.compensation",
+          "source_column": "hra_amount",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "special_allowance",
+          "source_table": "raw.compensation",
+          "source_column": "special_allowance",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gross_ctc",
+          "source_table": "raw.compensation",
+          "source_column": "gross_ctc",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "employer_pf_contribution",
+          "source_table": "raw.compensation",
+          "source_column": "employer_pf_contribution",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "employer_esi_contribution",
+          "source_table": "raw.compensation",
+          "source_column": "employer_esi_contribution",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "grade_band",
+          "source_table": "raw.compensation",
+          "source_column": "grade_band",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "salary_revision_reason",
+          "source_table": "raw.compensation",
+          "source_column": "salary_revision_reason",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "approved_by_mgr_id",
+          "source_table": "raw.compensation",
+          "source_column": "approved_by_mgr_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": "",
+          "source_column": "",
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "emp_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft or unauthorized access to personal information."
+        },
+        {
+          "column": "approved_by_mgr_id",
+          "pii_type": "EMAIL",
+          "severity": "MEDIUM",
+          "real_world_risk": "If leaked, it could lead to unauthorized access to internal communications and potentially phishing attacks."
+        }
+      ],
+      "business_description": "This table provides a snapshot of employee compensation details, including basic salary, allowances, and employer contributions. It is used for payroll processing and salary revision tracking.",
+      "who_should_access": "HR and Payroll teams",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is tightly controlled and monitored due to the presence of personal and sensitive employee information.",
+      "model_name": "stg_compensation",
+      "sql_lines": 17,
+      "analysed_at": "2026-06-03T06:24:55.769264+00:00"
+    },
+    "stg_monthly_payroll": {
+      "source_tables": [
+        "monthly_payroll"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "payroll_id",
+          "source_table": "monthly_payroll",
+          "source_column": "payroll_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "emp_id",
+          "source_table": "monthly_payroll",
+          "source_column": "emp_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payroll_month",
+          "source_table": "monthly_payroll",
+          "source_column": "payroll_month",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "working_days",
+          "source_table": "monthly_payroll",
+          "source_column": "working_days",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "present_days",
+          "source_table": "monthly_payroll",
+          "source_column": "present_days",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "lop_days",
+          "source_table": "monthly_payroll",
+          "source_column": "lop_days",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "gross_earnings",
+          "source_table": "monthly_payroll",
+          "source_column": "gross_earnings",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "basic_pay",
+          "source_table": "monthly_payroll",
+          "source_column": "basic_pay",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "hra_paid",
+          "source_table": "monthly_payroll",
+          "source_column": "hra_paid",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "special_allowance_paid",
+          "source_table": "monthly_payroll",
+          "source_column": "special_allowance_paid",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "overtime_amount",
+          "source_table": "monthly_payroll",
+          "source_column": "overtime_amount",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "performance_bonus",
+          "source_table": "monthly_payroll",
+          "source_column": "performance_bonus",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "tds_deducted",
+          "source_table": "monthly_payroll",
+          "source_column": "tds_deducted",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "pf_deducted",
+          "source_table": "monthly_payroll",
+          "source_column": "pf_deducted",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "esi_deducted",
+          "source_table": "monthly_payroll",
+          "source_column": "esi_deducted",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "pt_deducted",
+          "source_table": "monthly_payroll",
+          "source_column": "pt_deducted",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "loan_recovery",
+          "source_table": "monthly_payroll",
+          "source_column": "loan_recovery",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "net_take_home",
+          "source_table": "monthly_payroll",
+          "source_column": "net_take_home",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payment_status",
+          "source_table": "monthly_payroll",
+          "source_column": "payment_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "payment_date",
+          "source_table": "monthly_payroll",
+          "source_column": "payment_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "emp_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft and unauthorized access to personal information."
+        }
+      ],
+      "business_description": "This table contains monthly payroll data for employees, including earnings, deductions, and net take-home pay. It is used for financial reporting and employee compensation management.",
+      "who_should_access": "Finance and HR teams",
+      "who_should_NOT_access": "Marketing and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is restricted to authorized personnel only, and that data is encrypted both at rest and in transit.",
+      "model_name": "stg_monthly_payroll",
+      "sql_lines": 25,
+      "analysed_at": "2026-06-03T06:25:00.676983+00:00"
+    },
+    "stg_performance": {
+      "source_tables": [
+        "performance_reviews"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "review_id",
+          "source_table": "performance_reviews",
+          "source_column": "review_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "emp_id",
+          "source_table": "performance_reviews",
+          "source_column": "emp_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "review_cycle",
+          "source_table": "performance_reviews",
+          "source_column": "review_cycle",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "reviewer_emp_id",
+          "source_table": "performance_reviews",
+          "source_column": "reviewer_emp_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "self_rating",
+          "source_table": "performance_reviews",
+          "source_column": "self_rating",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "manager_rating",
+          "source_table": "performance_reviews",
+          "source_column": "manager_rating",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "final_rating",
+          "source_table": "performance_reviews",
+          "source_column": "final_rating",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "rating_label",
+          "source_table": "performance_reviews",
+          "source_column": "rating_label",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "strengths_comment",
+          "source_table": "performance_reviews",
+          "source_column": "strengths_comment",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "improvement_areas",
+          "source_table": "performance_reviews",
+          "source_column": "improvement_areas",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "promotion_recommended",
+          "source_table": "performance_reviews",
+          "source_column": "promotion_recommended",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "pip_initiated",
+          "source_table": "performance_reviews",
+          "source_column": "pip_initiated",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "review_status",
+          "source_table": "performance_reviews",
+          "source_column": "review_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "emp_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to employee IDs could lead to identity theft or fraud."
+        },
+        {
+          "column": "reviewer_emp_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "Unauthorized access to reviewer employee IDs could lead to identity theft or fraud."
+        }
+      ],
+      "business_description": "This table contains performance review data for employees, including ratings, comments, and status. It is used for evaluating employee performance and making decisions about promotions and development plans.",
+      "who_should_access": "Human Resources, Managers, and Employee Development teams",
+      "who_should_NOT_access": "General public, Marketing, and Sales teams",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is tightly controlled and monitored due to the presence of PII data.",
+      "model_name": "stg_performance",
+      "sql_lines": 18,
+      "analysed_at": "2026-06-03T06:25:04.586512+00:00"
+    },
+    "stg_separations": {
+      "source_tables": [
+        "raw.separations"
+      ],
+      "column_lineage": [
+        {
+          "target_column": "separation_id",
+          "source_table": "raw.separations",
+          "source_column": "separation_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "emp_id",
+          "source_table": "raw.separations",
+          "source_column": "emp_id",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "separation_type",
+          "source_table": "raw.separations",
+          "source_column": "separation_type",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "resignation_date",
+          "source_table": "raw.separations",
+          "source_column": "resignation_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "last_working_date",
+          "source_table": "raw.separations",
+          "source_column": "last_working_date",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "exit_interview_done",
+          "source_table": "raw.separations",
+          "source_column": "exit_interview_done",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "exit_reason_category",
+          "source_table": "raw.separations",
+          "source_column": "exit_reason_category",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "exit_reason_detail",
+          "source_table": "raw.separations",
+          "source_column": "exit_reason_detail",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "rehire_eligible",
+          "source_table": "raw.separations",
+          "source_column": "rehire_eligible",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "full_final_amount",
+          "source_table": "raw.separations",
+          "source_column": "full_final_amount",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "full_final_status",
+          "source_table": "raw.separations",
+          "source_column": "full_final_status",
+          "transformation": "direct"
+        },
+        {
+          "target_column": "_loaded_at",
+          "source_table": null,
+          "source_column": null,
+          "transformation": "CURRENT_TIMESTAMP()"
+        }
+      ],
+      "pii_columns": [
+        {
+          "column": "emp_id",
+          "pii_type": "GOV_ID",
+          "severity": "HIGH",
+          "real_world_risk": "If leaked, it could lead to identity theft or unauthorized access to personal information."
+        }
+      ],
+      "business_description": "This table captures details of employee separations, including the type of separation, dates, and exit reasons. It is used for HR analytics and compliance reporting.",
+      "who_should_access": "HR, Compliance, and Management",
+      "who_should_NOT_access": "General Employees, Marketing, and Sales",
+      "sensitivity_level": "CONFIDENTIAL",
+      "governance_flag": "Ensure that access to this table is tightly controlled due to the presence of sensitive employee information.",
+      "model_name": "stg_separations",
+      "sql_lines": 16,
+      "analysed_at": "2026-06-03T06:25:08.293494+00:00"
+    },
+    "stg_workforce": {
+      "error": "unparseable",
+      "raw": "```json\n{\n  \"source_tables\": [\n    \"raw.workforce\"\n  ],\n  \"column_lineage\": [\n    {\n      \"target_column\": \"emp_id\",\n      \"source_table\": \"raw.workforce\",\n      \"source_column\": \"emp_id\",\n      \"transformation\": \"direct\"\n    },\n    {\n      \"target_column\": \"emp_code\",\n      \"source_table\": \"raw.wor",
+      "model_name": "stg_workforce",
+      "sql_lines": 29,
+      "analysed_at": "2026-06-03T06:25:15.334996+00:00"
+    }
+  },
+  "three_questions": {
+    "q1_most_damaging_column": {
+      "column": "dim_people.pan_number",
+      "why": "A malicious actor could use the PAN number to commit severe financial fraud and identity theft. The critical severity of this data means that its exposure could have catastrophic consequences."
+    },
+    "q2_hacker_target_table": {
+      "table": "fct_payroll_ledger",
+      "why": "With SELECT access to this table, a hacker could obtain detailed payroll information, including gross earnings, net take-home pay, and deductions. This could be used for financial fraud, identity theft, and unauthorized financial transactions.",
+      "damage_estimate": "significant harm"
+    },
+    "q3_europe_expansion": {
+      "columns_needing_consent": [
+        "dim_people.personal_email",
+        "dim_people.date_of_birth",
+        "dim_people.work_location"
+      ],
+      "why": "These columns contain personal and sensitive information that requires explicit consent under GDPR for processing. Work location data can also be considered sensitive personal information.",
+      "columns_already_compliant": [
+        "dim_people.email_hash (hashed email addresses are considered pseudonymous data and do not require consent under GDPR)",
+        "dim_people.pan_hash (hashed PAN numbers are considered pseudonymous data and do not require consent under GDPR)"
+      ]
+    }
+  },
+  "pii_surface_area": [
+    {
+      "table": "dim_people",
+      "column": "personal_email",
+      "pii_type": "EMAIL",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to personal email could lead to phishing attacks and identity theft."
+    },
+    {
+      "table": "dim_people",
+      "column": "pan_number",
+      "pii_type": "GOV_ID",
+      "severity": "CRITICAL",
+      "risk": "Exposure of PAN number could lead to severe financial fraud and identity theft."
+    },
+    {
+      "table": "dim_people",
+      "column": "date_of_birth",
+      "pii_type": "BIOMETRIC",
+      "severity": "MEDIUM",
+      "risk": "Exposure of date of birth could be used in identity theft and social engineering attacks."
+    },
+    {
+      "table": "dim_people",
+      "column": "email_hash",
+      "pii_type": "EMAIL",
+      "severity": "MEDIUM",
+      "risk": "Although hashed, if the hashing algorithm is compromised, it could still lead to privacy breaches."
+    },
+    {
+      "table": "dim_people",
+      "column": "pan_hash",
+      "pii_type": "GOV_ID",
+      "severity": "MEDIUM",
+      "risk": "If the hashing algorithm is compromised, it could still lead to privacy breaches."
+    },
+    {
+      "table": "fct_payroll_ledger",
+      "column": "emp_id",
+      "pii_type": "GOV_ID",
+      "severity": "CRITICAL",
+      "risk": "Leakage of employee IDs could lead to identity theft and unauthorized access to personal and financial information."
+    },
+    {
+      "table": "fct_payroll_ledger",
+      "column": "work_location",
+      "pii_type": "LOCATION",
+      "severity": "MEDIUM",
+      "risk": "Disclosure of work locations could lead to privacy breaches and potential security risks."
+    },
+    {
+      "table": "stg_compensation",
+      "column": "emp_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft or unauthorized access to personal information."
+    },
+    {
+      "table": "stg_compensation",
+      "column": "approved_by_mgr_id",
+      "pii_type": "EMAIL",
+      "severity": "MEDIUM",
+      "risk": "If leaked, it could lead to unauthorized access to internal communications and potentially phishing attacks."
+    },
+    {
+      "table": "stg_monthly_payroll",
+      "column": "emp_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft and unauthorized access to personal information."
+    },
+    {
+      "table": "stg_performance",
+      "column": "emp_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to employee IDs could lead to identity theft or fraud."
+    },
+    {
+      "table": "stg_performance",
+      "column": "reviewer_emp_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "Unauthorized access to reviewer employee IDs could lead to identity theft or fraud."
+    },
+    {
+      "table": "stg_separations",
+      "column": "emp_id",
+      "pii_type": "GOV_ID",
+      "severity": "HIGH",
+      "risk": "If leaked, it could lead to identity theft or unauthorized access to personal information."
+    }
+  ],
+  "summary": {
+    "total_tables": 8,
+    "total_pii_columns": 13,
+    "critical_columns": 2,
+    "high_columns": 6,
+    "analysis_seconds": 39.0
+  }
+}
