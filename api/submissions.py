@@ -286,7 +286,7 @@ def ist_now():
 def build_response():
     """Core logic: hit GitHub API and return the dashboard data dict."""
     token = os.environ.get('GITHUB_TOKEN', '')
-    trainer_repo = os.environ.get('TRAINER_REPO', 'Anilmidna/sigma-genai-de')
+    trainer_repo = os.environ.get('TRAINER_REPO', 'askanilkumar/sigma-genai-de')
 
     if not token:
         return {
