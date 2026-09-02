@@ -226,19 +226,33 @@ def github_get(url, token):
 
 
 def get_all_forks(owner, repo, token):
-    """Fetch all forks with pagination."""
+    """Fetch all forks with pagination.
+    Returns (forks, error_message). error_message is set only when the FIRST
+    page fails — that's a real problem (bad token, wrong repo, rate limit),
+    as opposed to a later page simply running out of results."""
     forks = []
     page = 1
     while True:
         url = f'https://api.github.com/repos/{owner}/{repo}/forks?per_page=100&page={page}'
         status, body = github_get(url, token)
         if status != 200 or not body:
+            if page == 1:
+                if status == 401:
+                    return forks, "GitHub rejected the token (401 Unauthorized). The GITHUB_TOKEN is invalid, expired, or was revoked — generate a new one and update it in Vercel."
+                if status == 403:
+                    return forks, "GitHub returned 403 (rate limit exceeded, or the token lacks access to this repo)."
+                if status == 404:
+                    return forks, f"GitHub returned 404 for {owner}/{repo} — check TRAINER_REPO is spelled correctly and the token can see this repo."
+                if status == 0:
+                    return forks, "Could not reach the GitHub API (network/timeout error from the serverless function)."
+                if status != 200:
+                    return forks, f"GitHub API returned unexpected status {status} when listing forks."
             break
         forks.extend(body)
         if len(body) < 100:
             break
         page += 1
-    return forks
+    return forks, None
 
 
 def get_fork_file_tree(fork_owner, fork_repo, token):
@@ -314,7 +328,14 @@ def build_response():
     # All days = GitHub-tracked days + any manual-only days
     all_days = sorted(set(EXPECTED_FILES.keys()) | manual_days)
 
-    forks = get_all_forks(owner, repo, token)
+    forks, forks_error = get_all_forks(owner, repo, token)
+    if forks_error and not forks:
+        return {
+            "error": f"Could not load forks for {owner}/{repo}: {forks_error}",
+            "days": [],
+            "students": [],
+            "refreshed_at": ist_now(),
+        }
 
     known_usernames_lower = {u.lower(): u for u in name_map.keys()}
     students_data = []
